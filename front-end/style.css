@@ -1,0 +1,249 @@
+
+  :root {
+    --text-main: #000;
+    --text-secondary: #555;
+    --bg: #fff;
+    --card-bg: #fafafa;
+    --border: #eaeaea;
+    --accent: #111;
+    --radius: 14px;
+  }
+
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: "Inter", Arial, sans-serif;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text-main);
+    display: flex;
+    justify-content: center;
+    padding: 25px 15px;
+  }
+
+  .container {
+    width: 100%;
+    max-width: 430px;
+  }
+
+  /* Shared */
+  .page {
+    display: none;
+    animation: fade 0.4s ease-in-out;
+  }
+  .page.active {
+    display: block;
+  }
+
+  @keyframes fade {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  h1, h2, h3 {
+    font-weight: 600;
+  }
+
+  p {
+    font-size: 0.95rem;
+    color: var(--text-secondary);
+  }
+
+  /* Page 1 - Welcome */
+  .welcome-header {
+    display:flex;justify-content:space-between; align-items:center;
+  }
+  .session{
+    display:flex;justify-content:space-between; align-items:center;
+  }
+  .tips {
+    background: #f2f2f2;
+    border-radius: var(--radius);
+    padding: 10px;
+    font-size: 0.85rem;
+  }
+
+  .welcome-header h1 {
+    font-size: 1.6rem;
+    font-weight: 700;
+  }
+
+  .intro {
+    text-align: center;
+    margin-bottom: 25px;
+  }
+
+  .intro-icon {
+    font-size: 3rem;
+    margin-bottom: 10px;
+  }
+
+  .card-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+    margin: 25px 0;
+  }
+
+  .card {
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    text-align: center;
+    padding: 18px 10px;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.03);
+  }
+
+  .card span {
+    font-size: 1.8rem;
+  }
+
+  .card h3 {
+    margin-top: 8px;
+    font-size: 1rem;
+  }
+
+  .card p {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+  }
+
+  button.main-btn {
+    width: 100%;
+    padding: 14px;
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    border-radius: var(--radius);
+    font-size: 1rem;
+    cursor: pointer;
+    margin-top: 10px;
+  }
+
+  button.main-btn:hover {
+    opacity: 0.9;
+  }
+
+  /* Dashboard Shared */
+  .progress-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 20px;
+  }
+
+  .progress-header h2 {
+    font-size: 1.1rem;
+  }
+
+  .stats {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 25px;
+  }
+
+  .stat {
+    width: 48%;
+    
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 15px;
+    text-align: center;
+  }
+
+  .progress-circle {
+    position: relative;
+    width: 70px;
+    height: 70px;
+    margin: 0 auto 10px;
+  }
+
+  .progress-circle svg {
+    transform: rotate(-90deg);
+    width: 70px;
+    height: 70px;
+  }
+
+  .progress-circle circle {
+    fill: none;
+    stroke-width: 8;
+    stroke-linecap: round;
+    
+  }
+
+  .progress-bg {
+    stroke: #eee;
+  }
+
+  .progress-bar {
+    stroke: green;
+    transition: stroke-dashoffset 0.5s ease;
+  }
+
+  .progress-text {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 0.85rem;
+    font-weight: 600;
+  }
+
+  .active-learning {
+    margin-bottom: 20px;
+  }
+
+  .active-learning p {
+    font-size: 0.9rem;
+  }
+
+  .tip {
+    background: #f2f2f2;
+    border-radius: var(--radius);
+    padding: 10px;
+    font-size: 0.85rem;
+    margin-bottom: 25px;
+  }
+
+  .settings .switch {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+  }
+
+  .settings label {
+    font-size: 0.9rem;
+  }
+
+  .footer-buttons {
+    display: flex;
+    gap: 10px;
+    margin-top: 25px;
+  }
+
+  .footer-buttons button {
+    flex: 1;
+    padding: 13px;
+    border-radius: var(--radius);
+    font-size: 0.95rem;
+    cursor: pointer;
+  }
+
+  .review {
+    background: #fff;
+    border: 1px solid var(--border);
+  }
+
+  .keep {
+    background: var(--accent);
+    color: #fff;
+  }
+
+  @media (max-width: 500px) {
+    .container { padding: 10px; }
+    .card-grid { grid-template-columns: 1fr; }
+    .progress-circle { width: 60px; height: 60px; }
+  }
