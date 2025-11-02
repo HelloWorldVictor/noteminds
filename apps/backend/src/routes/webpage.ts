@@ -1,5 +1,5 @@
 import { Elysia, t } from "elysia";
-import { webpageService } from "@/services/webpage-service";
+import { webpageService } from "@/lib/services/webpage-service";
 
 export const webpageRoutes = new Elysia({ prefix: "/webpage" })
   .post(
