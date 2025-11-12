@@ -73,6 +73,23 @@ CREATE INDEX `flashcard_difficulty_idx` ON `flashcard` (`difficulty`);--> statem
 CREATE INDEX `flashcard_next_review_idx` ON `flashcard` (`next_review`);--> statement-breakpoint
 CREATE INDEX `flashcard_created_at_idx` ON `flashcard` (`created_at`);--> statement-breakpoint
 CREATE INDEX `flashcard_user_webpage_idx` ON `flashcard` (`user_id`,`webpage_id`);--> statement-breakpoint
+CREATE TABLE `library` (
+	`id` text PRIMARY KEY NOT NULL,
+	`user_id` text NOT NULL,
+	`item_type` text NOT NULL,
+	`item_id` text,
+	`title` text NOT NULL,
+	`url` text,
+	`tags` text,
+	`notes` text,
+	`saved_at` integer DEFAULT (cast(unixepoch('subsecond') * 1000 as integer)) NOT NULL,
+	FOREIGN KEY (`user_id`) REFERENCES `user`(`id`) ON UPDATE no action ON DELETE cascade
+);
+--> statement-breakpoint
+CREATE INDEX `library_user_id_idx` ON `library` (`user_id`);--> statement-breakpoint
+CREATE INDEX `library_item_type_idx` ON `library` (`item_type`);--> statement-breakpoint
+CREATE INDEX `library_saved_at_idx` ON `library` (`saved_at`);--> statement-breakpoint
+CREATE INDEX `library_user_type_idx` ON `library` (`user_id`,`item_type`);--> statement-breakpoint
 CREATE TABLE `question` (
 	`id` text PRIMARY KEY NOT NULL,
 	`quiz_id` text NOT NULL,
@@ -188,11 +205,14 @@ CREATE TABLE `webpage` (
 	`title` text NOT NULL,
 	`extracted_content` text NOT NULL,
 	`content_hash` text NOT NULL,
+	`created_by` text NOT NULL,
 	`metadata` text,
 	`scraped_at` integer DEFAULT (cast(unixepoch('subsecond') * 1000 as integer)) NOT NULL,
-	`updated_at` integer NOT NULL
+	`updated_at` integer NOT NULL,
+	FOREIGN KEY (`created_by`) REFERENCES `user`(`id`) ON UPDATE no action ON DELETE cascade
 );
 --> statement-breakpoint
 CREATE INDEX `webpage_url_idx` ON `webpage` (`url`);--> statement-breakpoint
 CREATE INDEX `webpage_content_hash_idx` ON `webpage` (`content_hash`);--> statement-breakpoint
-CREATE INDEX `webpage_scraped_at_idx` ON `webpage` (`scraped_at`);
+CREATE INDEX `webpage_scraped_at_idx` ON `webpage` (`scraped_at`);--> statement-breakpoint
+CREATE INDEX `webpage_created_by_idx` ON `webpage` (`created_by`);

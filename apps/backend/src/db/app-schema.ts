@@ -13,6 +13,9 @@ export const webpage = sqliteTable(
     title: text("title").notNull(),
     extractedContent: text("extracted_content").notNull(),
     contentHash: text("content_hash").notNull(), // For deduplication
+    createdBy: text("created_by")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }), // Connect webpage to user
     metadata: text("metadata", { mode: "json" }).$type<{
       author?: string;
       publishedDate?: string;
@@ -27,11 +30,12 @@ export const webpage = sqliteTable(
       .$onUpdate(() => new Date())
       .notNull(),
   },
-  (table) => ({
-    urlIdx: index("webpage_url_idx").on(table.url),
-    contentHashIdx: index("webpage_content_hash_idx").on(table.contentHash),
-    scrapedAtIdx: index("webpage_scraped_at_idx").on(table.scrapedAt),
-  })
+  (table) => [
+    index("webpage_url_idx").on(table.url),
+    index("webpage_content_hash_idx").on(table.contentHash),
+    index("webpage_scraped_at_idx").on(table.scrapedAt),
+    index("webpage_created_by_idx").on(table.createdBy),
+  ]
 );
 
 // Summary table - AI-generated summaries of webpages
@@ -61,16 +65,13 @@ export const summary = sqliteTable(
       .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
       .notNull(),
   },
-  (table) => ({
-    userIdIdx: index("summary_user_id_idx").on(table.userId),
-    webpageIdIdx: index("summary_webpage_id_idx").on(table.webpageId),
-    typeIdx: index("summary_type_idx").on(table.type),
-    createdAtIdx: index("summary_created_at_idx").on(table.createdAt),
-    userWebpageIdx: index("summary_user_webpage_idx").on(
-      table.userId,
-      table.webpageId
-    ),
-  })
+  (table) => [
+    index("summary_user_id_idx").on(table.userId),
+    index("summary_webpage_id_idx").on(table.webpageId),
+    index("summary_type_idx").on(table.type),
+    index("summary_created_at_idx").on(table.createdAt),
+    index("summary_user_webpage_idx").on(table.userId, table.webpageId),
+  ]
 );
 
 // Quiz table - contains quiz metadata
@@ -104,16 +105,13 @@ export const quiz = sqliteTable(
       .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
       .notNull(),
   },
-  (table) => ({
-    userIdIdx: index("quiz_user_id_idx").on(table.userId),
-    webpageIdIdx: index("quiz_webpage_id_idx").on(table.webpageId),
-    difficultyIdx: index("quiz_difficulty_idx").on(table.difficulty),
-    createdAtIdx: index("quiz_created_at_idx").on(table.createdAt),
-    userWebpageIdx: index("quiz_user_webpage_idx").on(
-      table.userId,
-      table.webpageId
-    ),
-  })
+  (table) => [
+    index("quiz_user_id_idx").on(table.userId),
+    index("quiz_webpage_id_idx").on(table.webpageId),
+    index("quiz_difficulty_idx").on(table.difficulty),
+    index("quiz_created_at_idx").on(table.createdAt),
+    index("quiz_user_webpage_idx").on(table.userId, table.webpageId),
+  ]
 );
 
 // Question table - individual questions within quizzes
@@ -143,11 +141,11 @@ export const question = sqliteTable(
       keywords?: string[];
     }>(),
   },
-  (table) => ({
-    quizIdIdx: index("question_quiz_id_idx").on(table.quizId),
-    typeIdx: index("question_type_idx").on(table.questionType),
-    orderIdx: index("question_order_idx").on(table.quizId, table.orderIndex),
-  })
+  (table) => [
+    index("question_quiz_id_idx").on(table.quizId),
+    index("question_type_idx").on(table.questionType),
+    index("question_order_idx").on(table.quizId, table.orderIndex),
+  ]
 );
 
 // Flashcard table - spaced repetition flashcards
@@ -226,16 +224,13 @@ export const quizAttempt = sqliteTable(
       .notNull(),
     completedAt: integer("completed_at", { mode: "timestamp_ms" }),
   },
-  (table) => ({
-    userIdIdx: index("quiz_attempt_user_id_idx").on(table.userId),
-    quizIdIdx: index("quiz_attempt_quiz_id_idx").on(table.quizId),
-    completedIdx: index("quiz_attempt_completed_idx").on(table.completed),
-    startedAtIdx: index("quiz_attempt_started_at_idx").on(table.startedAt),
-    userQuizIdx: index("quiz_attempt_user_quiz_idx").on(
-      table.userId,
-      table.quizId
-    ),
-  })
+  (table) => [
+    index("quiz_attempt_user_id_idx").on(table.userId),
+    index("quiz_attempt_quiz_id_idx").on(table.quizId),
+    index("quiz_attempt_completed_idx").on(table.completed),
+    index("quiz_attempt_started_at_idx").on(table.startedAt),
+    index("quiz_attempt_user_quiz_idx").on(table.userId, table.quizId),
+  ]
 );
 
 // User notes table - personal notes on webpages
@@ -270,16 +265,13 @@ export const userNote = sqliteTable(
       .$onUpdate(() => new Date())
       .notNull(),
   },
-  (table) => ({
-    userIdIdx: index("user_note_user_id_idx").on(table.userId),
-    webpageIdIdx: index("user_note_webpage_id_idx").on(table.webpageId),
-    isPrivateIdx: index("user_note_is_private_idx").on(table.isPrivate),
-    createdAtIdx: index("user_note_created_at_idx").on(table.createdAt),
-    userWebpageIdx: index("user_note_user_webpage_idx").on(
-      table.userId,
-      table.webpageId
-    ),
-  })
+  (table) => [
+    index("user_note_user_id_idx").on(table.userId),
+    index("user_note_webpage_id_idx").on(table.webpageId),
+    index("user_note_is_private_idx").on(table.isPrivate),
+    index("user_note_created_at_idx").on(table.createdAt),
+    index("user_note_user_webpage_idx").on(table.userId, table.webpageId),
+  ]
 );
 
 // User preferences table - user settings and preferences
@@ -324,9 +316,37 @@ export const userPreference = sqliteTable(
       .$onUpdate(() => new Date())
       .notNull(),
   },
-  (table) => ({
-    userIdIdx: index("user_preference_user_id_idx").on(table.userId),
-  })
+  (table) => [index("user_preference_user_id_idx").on(table.userId)]
+);
+
+// Library table - user's saved resources and collections
+export const library = sqliteTable(
+  "library",
+  {
+    id: text("id")
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    itemType: text("item_type", {
+      enum: ["webpage", "summary", "quiz", "flashcard", "external_link"],
+    }).notNull(),
+    itemId: text("item_id"), // References the actual content (can be null for external links)
+    title: text("title").notNull(),
+    url: text("url"), // For external links or webpage URLs
+    tags: text("tags", { mode: "json" }).$type<string[]>(),
+    notes: text("notes"), // Personal notes about this library item
+    savedAt: integer("saved_at", { mode: "timestamp_ms" })
+      .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
+      .notNull(),
+  },
+  (table) => [
+    index("library_user_id_idx").on(table.userId),
+    index("library_item_type_idx").on(table.itemType),
+    index("library_saved_at_idx").on(table.savedAt),
+    index("library_user_type_idx").on(table.userId, table.itemType),
+  ]
 );
 
 // Export all tables and types
@@ -353,3 +373,6 @@ export type UserNoteSelect = typeof userNote.$inferSelect;
 
 export type UserPreferenceInsert = typeof userPreference.$inferInsert;
 export type UserPreferenceSelect = typeof userPreference.$inferSelect;
+
+export type LibraryInsert = typeof library.$inferInsert;
+export type LibrarySelect = typeof library.$inferSelect;
