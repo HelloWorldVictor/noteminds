@@ -41,7 +41,7 @@ export class WebpageService {
       const newWebpageData: WebpageInsert = {
         url,
         title: processedContent.title,
-        extractedContent: processedContent.content,
+        extractedContent: processedContent.markdown,
         contentHash: processedContent.metadata.contentHash,
         metadata: {
           author: processedContent.metadata.author,
@@ -50,6 +50,7 @@ export class WebpageService {
           wordCount: processedContent.metadata.wordCount,
           readingTime: processedContent.metadata.readingTime,
         },
+        createdBy: userId,
       };
 
       const [newWebpage] = await db

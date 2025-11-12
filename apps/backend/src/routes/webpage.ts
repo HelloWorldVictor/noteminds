@@ -1,14 +1,15 @@
-import { Elysia, t } from "elysia";
+import { createRouter } from "@/lib/create-app";
 import { webpageService } from "@/lib/services/webpage-service";
+import { t } from "elysia";
 
-export const webpageRoutes = new Elysia({ prefix: "/webpage" })
+export const webpageRoutes = createRouter({ prefix: "/webpage" })
   .post(
     "/analyze",
-    async ({ body, set }) => {
+    async ({ body, set, user }) => {
       try {
-        const { url, html, userId } = body;
+        const { url, html } = body;
 
-        const result = await webpageService.analyzeWebpage(url, userId, html);
+        const result = await webpageService.analyzeWebpage(url, user.id, html);
 
         return {
           success: true,
@@ -37,9 +38,9 @@ export const webpageRoutes = new Elysia({ prefix: "/webpage" })
       }
     },
     {
+      auth: true,
       body: t.Object({
         url: t.String({ format: "uri" }),
-        userId: t.String(),
         html: t.Optional(t.String()),
       }),
       detail: {
