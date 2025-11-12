@@ -81,7 +81,7 @@ PORT=4137
 
 Once running, visit:
 
-- **API Docs**: <http://localhost:4137/docs> (Swagger UI)
+- **API Docs**: <http://localhost:4137/docs> (Documentation UI)
 - **Health Check**: <http://localhost:4137/health>
 - **Database Studio**: Run `pnpm run db:studio`
 
