@@ -1,63 +1,18 @@
-import { Elysia } from "elysia";
-import { openapi } from "@elysiajs/openapi";
-import { node } from "@elysiajs/node";
-import { auth, OpenAPI } from "@/lib/auth";
-import { cors } from "@elysiajs/cors";
+import { auth } from "@/lib/auth";
 import {
-  webpageRoutes,
-  summaryRoutes,
-  quizRoutes,
   flashcardRoutes,
+  quizRoutes,
   resourceRoutes,
+  summaryRoutes,
+  webpageRoutes,
 } from "@/routes";
+import { createApp } from "./lib/create-app";
+import { env } from "./lib/env";
 
 async function main() {
-  const components = await OpenAPI.components;
-  const paths = await OpenAPI.getPaths();
-
-  const app = new Elysia({
-    adapter: node(),
-  })
-    .use(
-      cors({
-        origin: "*",
-        methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-        credentials: true,
-        allowedHeaders: ["Content-Type", "Authorization"],
-      })
-    )
+  const app = await createApp();
+  app
     .mount("/auth", auth.handler)
-    .use(
-      openapi({
-        path: "/docs",
-        documentation: {
-          components,
-          paths,
-          info: {
-            title: "Noteminds API",
-            version: "1.0.0",
-            description: "Smart reading assistant API with AI-powered features",
-          },
-          tags: [
-            {
-              name: "Webpage",
-              description: "Webpage analysis and content processing",
-            },
-            { name: "Summary", description: "AI-generated content summaries" },
-            {
-              name: "Quiz",
-              description: "AI-generated quizzes and assessments",
-            },
-            { name: "Flashcard", description: "Spaced repetition flashcards" },
-            {
-              name: "Resources",
-              description: "Related learning resources discovery",
-            },
-            { name: "AI", description: "AI-powered features" },
-          ],
-        },
-      })
-    )
     .use(webpageRoutes)
     .use(summaryRoutes)
     .use(quizRoutes)
@@ -72,7 +27,7 @@ async function main() {
       status: "healthy",
       timestamp: new Date().toISOString(),
     }))
-    .listen(4137, ({ hostname, port }) => {
+    .listen(env.PORT, ({ hostname, port }) => {
       console.log(`🦊 Elysia is running at http://${hostname}:${port}`);
     });
 }

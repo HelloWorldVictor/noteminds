@@ -1,6 +1,7 @@
+import { createRouter } from "@/lib/create-app";
 import { Elysia, t } from "elysia";
 
-export const summaryRoutes = new Elysia({ prefix: "/summary" })
+export const summaryRoutes = createRouter({ prefix: "/summary" })
   .post(
     "/generate",
     async ({ body, set }) => {
