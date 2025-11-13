@@ -1,10 +1,19 @@
-import { useState } from "react";
+import { useEffect } from "react";
+import {
+  AuthUIProvider,
+  AuthView,
+  useAuthenticate,
+} from "@daveyplate/better-auth-ui";
+import { createAuthClient } from "better-auth/react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
 import "@/styles/globals.css";
+import React from "react";
+
+const authClient = createAuthClient({ baseURL: "http://localhost:4137" });
 
 type PageKey = "welcome" | "progressStart" | "progressUpdate";
 
@@ -40,13 +49,26 @@ function ProgressCircle({ value = 50 }: { value?: number }) {
   );
 }
 
-export function App() {
-  const [page, setPage] = useState<PageKey>("welcome");
-  const [autoSummarize, setAutoSummarize] = useState(true);
-  const [reminders, setReminders] = useState(true);
+function MainApp() {
+  useAuthenticate();
+  const [page, setPage] = React.useState<PageKey>("welcome");
+  const [autoSummarize, setAutoSummarize] = React.useState(true);
+  const [reminders, setReminders] = React.useState(true);
 
+  // Directly render the app UI. User is authenticated if we reach here.
   return (
     <div className="bg-background text-foreground w-[430px] max-w-[430px] p-4">
+      <div className="mb-4 flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <img
+            src="/alu.png"
+            alt="Noteminds Logo"
+            className="h-[32px] w-auto"
+          />
+          <h3 className="text-base font-semibold">NoteMinds</h3>
+        </div>
+        {/* Optionally add a logout flow here if supported by your provider */}
+      </div>
       {page === "welcome" && (
         <div className="space-y-4">
           <div className="flex items-center justify-between">
@@ -296,5 +318,13 @@ export function App() {
         </span>
       </div>
     </div>
+  );
+}
+
+export function App() {
+  return (
+    <AuthUIProvider authClient={authClient}>
+      <MainApp />
+    </AuthUIProvider>
   );
 }
