@@ -1,68 +1,61 @@
+import { AuthDialog } from "@/components/inc/auth-dialog";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { AuthDialog } from "@/components/inc/auth-dialog";
-import { authClient } from "@/lib/auth-client";
 import "@/styles/globals.css";
 import { createFileRoute } from "@tanstack/react-router";
+import NotemindLogo from "@/assets/icon.png";
+import { useTheme } from "@/components/inc/theme-provider";
+import { Moon, Sun } from "lucide-react";
 export const Route = createFileRoute("/welcome")({
   component: RouteComponent,
 });
 
 function RouteComponent() {
-  const { data: session, isPending } = authClient.useSession();
+  const { theme, setTheme } = useTheme();
 
-  // If user is already signed in, show different content
-  if (session?.user) {
-    return (
-      <div className="w-full space-y-4">
-        <div className="flex items-center justify-between px-4">
-          <h3 className="text-base font-semibold">NoteMinds</h3>
-          <div className="flex items-center gap-2">
-            <span className="text-muted-foreground text-sm">
-              {session.user.name}
-            </span>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => authClient.signOut()}
-            >
-              Sign out
-            </Button>
-          </div>
-        </div>
-        <Separator />
-        <div className="px-4 text-center">
-          <div className="bg-primary text-primary-foreground mx-auto mb-2 flex h-[60px] w-[60px] items-center justify-center rounded-full text-2xl">
-            <span>👋</span>
-          </div>
-          <h3 className="text-base font-semibold">
-            Welcome back, {session.user.name}!
-          </h3>
-          <p className="text-muted-foreground mt-2 text-sm">
-            Ready to continue learning? Start by processing a webpage or
-            reviewing your saved content.
-          </p>
-        </div>
-        <div className="px-4">
-          <Button className="w-full">Continue Reading</Button>
-        </div>
-      </div>
-    );
+  function handleThemeToggle() {
+    // Check system preference for default behavior
+    const systemIsDark = window.matchMedia(
+      "(prefers-color-scheme: dark)"
+    ).matches;
+
+    if (theme === "system") {
+      // If system theme, toggle to opposite of system preference
+      setTheme(systemIsDark ? "light" : "dark");
+    } else if (theme === "dark") {
+      setTheme("light");
+    } else {
+      setTheme("dark");
+    }
   }
 
-  // Welcome screen for new/signed out users
   return (
     <div className="w-full space-y-4">
-      <div className="flex items-center justify-between px-4">
+      <div className="flex items-center justify-between border-b px-4 py-2">
         <h3 className="text-base font-semibold">NoteMinds</h3>
-        <img src="/alu.png" alt="NoteMinds Logo" className="h-[40px] w-auto" />
-      </div>
-      <Separator />
-      <div className="px-4 text-center">
-        <div className="bg-foreground text-background mx-auto mb-2 flex h-[60px] w-[60px] items-center justify-center rounded-full text-2xl">
-          <span>📖</span>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={handleThemeToggle}
+            className="h-8 w-8"
+          >
+            {theme === "dark" ? (
+              <Sun className="h-4 w-4" />
+            ) : (
+              <Moon className="h-4 w-4" />
+            )}
+          </Button>
+          <img src="/alu.png" alt="NoteMinds Logo" className="h-10 w-auto" />
         </div>
+      </div>
+      <div className="px-4 text-center">
+        <img
+          src={NotemindLogo}
+          alt="NoteMinds Logo"
+          className="mx-auto mb-4 size-16"
+        />
         <h3 className="text-base font-semibold">Welcome to NoteMinds 🌟</h3>
         <p className="text-muted-foreground mt-2 text-sm">
           Your AI reading assistant ready to help you <b>learn smarter.</b>{" "}
@@ -78,19 +71,22 @@ function RouteComponent() {
           { i: "📝", h: "Context Notes", p: "Take notes while reading" },
           { i: "🔗", h: "Save Resources", p: "Keep resources organized" },
         ].map((c) => (
-          <Card key={c.h} className="p-4 text-center">
-            <div className="text-2xl">{c.i}</div>
-            <h3 className="mt-2 text-sm font-semibold">{c.h}</h3>
-            <p className="text-muted-foreground text-xs">{c.p}</p>
-          </Card>
+          <div
+            key={c.h}
+            className="rounded-(--radius) border p-4 px-5 text-center"
+          >
+            <div className="mb-4 text-2xl">{c.i}</div>
+            <div className="flex flex-col items-center justify-center">
+              <h3 className="text-sm font-semibold">{c.h}</h3>
+              <p className="text-muted-foreground text-xs">{c.p}</p>
+            </div>
+          </div>
         ))}
       </div>
 
       <div className="space-y-2 px-4">
         <AuthDialog>
-          <Button className="w-full" disabled={isPending}>
-            {isPending ? "Loading..." : "Start Reading"}
-          </Button>
+          <Button className="w-full">Authenticate</Button>
         </AuthDialog>
         <p className="text-muted-foreground text-center text-xs">
           Sign in to save your progress and sync across devices
