@@ -77,10 +77,16 @@ export class WebpageService {
   /**
    * Get webpage by ID
    */
-  async getWebpage(id: string): Promise<WebpageSelect | null> {
+  async getWebpage({
+    id,
+    userId,
+  }: {
+    id: string;
+    userId: string;
+  }): Promise<WebpageSelect | null> {
     try {
       const result = await db.query.webpage.findFirst({
-        where: eq(webpage.id, id),
+        where: and(eq(webpage.id, id), eq(webpage.createdBy, userId)),
       });
       return result || null;
     } catch (error) {

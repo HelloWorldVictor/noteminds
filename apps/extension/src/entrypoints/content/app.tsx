@@ -12,8 +12,7 @@ import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
 import "@/styles/globals.css";
 import React from "react";
-
-const authClient = createAuthClient({ baseURL: "http://localhost:4137" });
+import { authClient } from "@/lib/auth-client";
 
 type PageKey = "welcome" | "progressStart" | "progressUpdate";
 
@@ -322,9 +321,10 @@ function MainApp() {
 }
 
 export function App() {
-  return (
-    <AuthUIProvider authClient={authClient}>
-      <MainApp />
-    </AuthUIProvider>
-  );
+  // browser.cookies.get({
+  //   url: "chrome-extension://fnonohdpcdffdfofkahbbblojfijpamd/popup.html#/welcome",
+  //   name: "session",
+  // });
+  console.log("From content script:", authClient.useSession());
+  return "Hello world";
 }

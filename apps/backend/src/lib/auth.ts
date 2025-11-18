@@ -20,6 +20,7 @@ export const auth = betterAuth({
     },
   },
   plugins: [openAPI()],
+  trustedOrigins: ["chrome-extension://fnonohdpcdffdfofkahbbblojfijpamd"],
 });
 
 let _schema: ReturnType<typeof auth.api.generateOpenAPISchema>;

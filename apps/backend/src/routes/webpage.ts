@@ -53,11 +53,14 @@ export const webpageRoutes = createRouter({ prefix: "/webpage" })
   )
   .get(
     "/:id",
-    async ({ params, set }) => {
+    async ({ params, set, user }) => {
       try {
         const { id } = params;
 
-        const webpage = await webpageService.getWebpage(id);
+        const webpage = await webpageService.getWebpage({
+          id,
+          userId: user.id,
+        });
 
         if (!webpage) {
           set.status = 404;
@@ -81,6 +84,7 @@ export const webpageRoutes = createRouter({ prefix: "/webpage" })
       }
     },
     {
+      auth: true,
       params: t.Object({
         id: t.String(),
       }),
