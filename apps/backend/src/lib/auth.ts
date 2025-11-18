@@ -1,5 +1,5 @@
 import { betterAuth } from "better-auth";
-import { openAPI } from "better-auth/plugins";
+import { bearer, openAPI } from "better-auth/plugins";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { db } from "@/db";
 import { env } from "@/lib/env";
@@ -19,8 +19,20 @@ export const auth = betterAuth({
       clientSecret: env.GOOGLE_CLIENT_SECRET,
     },
   },
-  plugins: [openAPI()],
-  trustedOrigins: ["chrome-extension://fnonohdpcdffdfofkahbbblojfijpamd"],
+  plugins: [openAPI(), bearer()],
+  trustedOrigins: [
+    // Chrome extensions
+    "chrome-extension://fnonohdpcdffdfofkahbbblojfijpamd",
+    // Firefox extensions
+    "moz-extension://*",
+    // Edge extensions
+    "extension://*",
+    // Safari extensions
+    "safari-extension://*",
+    // Development and local testing
+    "http://localhost:*",
+    "https://localhost:*",
+  ],
 });
 
 let _schema: ReturnType<typeof auth.api.generateOpenAPISchema>;
