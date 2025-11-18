@@ -1,9 +1,29 @@
 import { useState } from "react";
-import { Card } from "@/components/ui/card";
+import { Card, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { StickyNote, Plus, Trash2, Edit2, Save } from "lucide-react";
+import {
+  Item,
+  ItemActions,
+  ItemContent,
+  ItemDescription,
+  ItemTitle,
+} from "@/components/ui/item";
+import {
+  StickyNote,
+  Plus,
+  Trash2,
+  Edit2,
+  Save,
+  MoreHorizontal,
+} from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface Note {
   id: number;
@@ -51,132 +71,100 @@ export function NotesTab() {
   };
 
   return (
-    <div className="space-y-4">
-      {/* Add Note Section */}
-      {isAdding ? (
-        <Card className="p-4">
-          <Textarea
-            placeholder="Write your note here..."
-            value={newNote}
-            onChange={(e) => setNewNote(e.target.value)}
-            className="mb-3 min-h-[100px] resize-none border-0 bg-transparent p-0 text-sm focus-visible:ring-0"
-          />
-          <div className="flex gap-2">
-            <Button
-              size="sm"
-              onClick={handleAddNote}
-              className="flex-1 gap-1 bg-primary text-primary-foreground"
-            >
-              <Save className="h-3.5 w-3.5" />
-              Save Note
-            </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => {
-                setIsAdding(false);
-                setNewNote("");
-              }}
-            >
-              Cancel
-            </Button>
-          </div>
-        </Card>
-      ) : (
-        <Button
-          onClick={() => setIsAdding(true)}
-          className="w-full gap-2 bg-primary text-primary-foreground"
-        >
-          <Plus className="h-4 w-4" />
-          Add New Note
-        </Button>
-      )}
+    <div className="space-y-6">
+      {/* Quick Note Section */}
+      <div className="border-border rounded-lg border-2 border-dashed bg-transparent p-4 shadow-none">
+        <h2 className="text-foreground mb-2 text-sm font-semibold">
+          Quick note
+        </h2>
+        <Textarea
+          placeholder="Jot something down...."
+          value={newNote}
+          onChange={(e) => setNewNote(e.target.value)}
+          className="placeholder:text-muted-foreground min-h-[100px] resize-none border bg-transparent p-3 text-sm focus-visible:ring-0"
+        />
+        <div className="flex items-center justify-between">
+          <span className="text-muted-foreground text-xs">
+            Tip: Press ⌘J to save
+          </span>
+          <Button
+            size="sm"
+            onClick={handleAddNote}
+            disabled={!newNote.trim()}
+            className="bg-noir text-noir-foreground gap-1.5 rounded-full"
+          >
+            <Plus className="h-3.5 w-3.5" />
+            Save note
+          </Button>
+        </div>
+      </div>
 
       {/* Notes List */}
       <div className="space-y-3">
         <div className="flex items-center justify-between">
-          <h3 className="text-sm font-semibold text-foreground">Your Notes</h3>
+          <h3 className="text-foreground text-sm font-semibold">My Notes</h3>
           <Badge variant="secondary">{notes.length} notes</Badge>
         </div>
 
         {notes.length === 0 ? (
           <Card className="p-8 text-center">
-            <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-muted">
-              <StickyNote className="h-6 w-6 text-muted-foreground" />
+            <div className="bg-muted mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full">
+              <StickyNote className="text-muted-foreground h-6 w-6" />
             </div>
-            <p className="text-sm text-muted-foreground">No notes yet</p>
-            <p className="text-xs text-muted-foreground">
+            <p className="text-muted-foreground text-sm">No notes yet</p>
+            <p className="text-muted-foreground text-xs">
               Start taking notes while you read
             </p>
           </Card>
         ) : (
           <div className="space-y-2">
             {notes.map((note) => (
-              <Card key={note.id} className="group p-4">
-                <div className="mb-2 flex items-start justify-between gap-2">
-                  <p className="text-pretty text-sm leading-relaxed text-foreground">
-                    {note.content}
-                  </p>
-                  <div className="flex shrink-0 gap-1 opacity-0 transition-opacity group-hover:opacity-100">
-                    <Button variant="ghost" size="icon" className="h-7 w-7">
-                      <Edit2 className="h-3.5 w-3.5" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-7 w-7 text-destructive hover:text-destructive"
-                      onClick={() => handleDeleteNote(note.id)}
-                    >
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </Button>
-                  </div>
-                </div>
-                <div className="flex items-center justify-between">
-                  <div className="flex flex-wrap gap-1">
-                    {note.tags.map((tag, index) => (
-                      <Badge
-                        key={index}
-                        variant="secondary"
-                        className="text-xs"
+              <Card
+                key={note.id}
+                className="border-border bg-background/60 border p-0 shadow-none"
+              >
+                <Item className="group rounded-xl border-0 px-4 py-3">
+                  <ItemContent>
+                    <ItemTitle>Empathy map prompts</ItemTitle>
+                    <ItemDescription className="line-clamp-2 whitespace-pre-wrap">
+                      {note.content}
+                    </ItemDescription>
+                    <span className="text-muted-foreground text-xs">
+                      Edited • {note.timestamp}
+                    </span>
+                  </ItemContent>
+                  <ItemActions className="self-start">
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon-sm">
+                          <MoreHorizontal className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent
+                        align="end"
+                        className="w-36"
+                        contentScript
                       >
-                        {tag}
-                      </Badge>
-                    ))}
-                  </div>
-                  <span className="text-xs text-muted-foreground">
-                    {note.timestamp}
-                  </span>
-                </div>
+                        <DropdownMenuItem className="gap-2 text-xs">
+                          <Edit2 className="h-3.5 w-3.5" />
+                          Edit note
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          className="text-destructive focus:text-destructive gap-2 text-xs"
+                          onClick={() => handleDeleteNote(note.id)}
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                          Delete
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </ItemActions>
+                </Item>
               </Card>
             ))}
           </div>
         )}
       </div>
-
-      {/* Quick Actions */}
-      {notes.length > 0 && (
-        <Card className="p-4">
-          <h4 className="mb-3 text-sm font-semibold text-foreground">
-            Quick Actions
-          </h4>
-          <div className="space-y-2">
-            <Button
-              variant="outline"
-              size="sm"
-              className="w-full justify-start text-sm bg-transparent"
-            >
-              Export All Notes
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              className="w-full justify-start text-sm bg-transparent"
-            >
-              Search Notes
-            </Button>
-          </div>
-        </Card>
-      )}
     </div>
   );
 }
