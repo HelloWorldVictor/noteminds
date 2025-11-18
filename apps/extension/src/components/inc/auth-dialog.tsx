@@ -15,6 +15,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { authClient } from "@/lib/auth-client";
+import { useNavigate } from "@tanstack/react-router";
 
 // Validation schemas
 const signInSchema = z.object({
@@ -49,6 +50,7 @@ export function AuthDialog({
   const [isOpen, setIsOpen] = useState(false);
   const [mode, setMode] = useState<"signin" | "signup">(defaultMode);
   const [isLoading, setIsLoading] = useState(false);
+  const navigate = useNavigate();
 
   // Sign In form
   const signInForm = useForm<SignInFormData>({
@@ -87,6 +89,7 @@ export function AuthDialog({
           message: result.error.message || "Invalid email or password",
         });
       }
+      navigate({ to: "/" });
     } catch (error) {
       console.error("Sign in error:", error);
       signInForm.setError("root", {
