@@ -1,5 +1,6 @@
 import { createAuthClient } from "better-auth/react";
 import { authTokenStorage } from "./auth-storage";
+import { ExtensionMessaging } from "./messaging";
 
 export const authClient = createAuthClient({
   baseURL: "http://localhost:4137/auth/", // The base URL of your auth server
@@ -10,11 +11,16 @@ export const authClient = createAuthClient({
     onRequest(context) {
       console.log("Auth request:", context.url);
     },
-    onSuccess(context) {
+    async onSuccess(context) {
       const authToken = context.response.headers.get("set-auth-token"); // get the token from the response headers
+
       // Store the token securely (e.g., in localStorage)
       if (authToken) {
-        authTokenStorage.setValue(authToken);
+        await authTokenStorage.setValue(authToken);
+        ExtensionMessaging.sendToAllTabs({
+          type: "TOKEN_UPDATED",
+          payload: { token: authToken },
+        });
       }
       console.log("Auth success:", context);
     },

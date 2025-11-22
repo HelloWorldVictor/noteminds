@@ -25,6 +25,7 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Bell, LogOut, Moon, Sparkles, Sun } from "lucide-react";
 import { useTheme } from "@/components/inc/theme-provider";
+import { ExtensionMessaging } from "@/lib/messaging";
 
 export const Route = createFileRoute("/_app/")({
   component: RouteComponent,
@@ -58,9 +59,12 @@ function RouteComponent() {
   const { theme, setTheme } = useTheme();
   const time = timeFormat.format(new Date());
   const navigate = Route.useNavigate();
-  function handleLogout() {
-    authClient.signOut();
+  async function handleLogout() {
     navigate({ to: "/welcome" });
+    await authClient.signOut();
+    ExtensionMessaging.sendToAllTabs({
+      type: "POPUP_LOGOUT",
+    });
   }
 
   function handleThemeToggle() {
