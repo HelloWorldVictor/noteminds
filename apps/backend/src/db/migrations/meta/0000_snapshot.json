@@ -1,7 +1,7 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "c26d88db-3e3b-45ec-ad13-6b2c2f22e34c",
+  "id": "14898312-18d0-4010-b8b8-82edd48b3fae",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "tables": {
     "account": {
@@ -1057,8 +1057,15 @@
           "notNull": true,
           "autoincrement": false
         },
-        "user_id": {
-          "name": "user_id",
+        "title": {
+          "name": "title",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "created_by": {
+          "name": "created_by",
           "type": "text",
           "primaryKey": false,
           "notNull": true,
@@ -1110,10 +1117,10 @@
         }
       },
       "indexes": {
-        "summary_user_id_idx": {
-          "name": "summary_user_id_idx",
+        "summary_created_by_idx": {
+          "name": "summary_created_by_idx",
           "columns": [
-            "user_id"
+            "created_by"
           ],
           "isUnique": false
         },
@@ -1138,22 +1145,22 @@
           ],
           "isUnique": false
         },
-        "summary_user_webpage_idx": {
-          "name": "summary_user_webpage_idx",
+        "summary_created_by_webpage_idx": {
+          "name": "summary_created_by_webpage_idx",
           "columns": [
-            "user_id",
+            "created_by",
             "webpage_id"
           ],
           "isUnique": false
         }
       },
       "foreignKeys": {
-        "summary_user_id_user_id_fk": {
-          "name": "summary_user_id_user_id_fk",
+        "summary_created_by_user_id_fk": {
+          "name": "summary_created_by_user_id_fk",
           "tableFrom": "summary",
           "tableTo": "user",
           "columnsFrom": [
-            "user_id"
+            "created_by"
           ],
           "columnsTo": [
             "id"

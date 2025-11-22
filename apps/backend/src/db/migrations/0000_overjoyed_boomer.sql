@@ -149,22 +149,23 @@ CREATE INDEX `quiz_attempt_started_at_idx` ON `quiz_attempt` (`started_at`);--> 
 CREATE INDEX `quiz_attempt_user_quiz_idx` ON `quiz_attempt` (`user_id`,`quiz_id`);--> statement-breakpoint
 CREATE TABLE `summary` (
 	`id` text PRIMARY KEY NOT NULL,
-	`user_id` text NOT NULL,
+	`title` text NOT NULL,
+	`created_by` text NOT NULL,
 	`webpage_id` text NOT NULL,
 	`content` text NOT NULL,
 	`type` text DEFAULT 'brief' NOT NULL,
 	`word_count` integer NOT NULL,
 	`metadata` text,
 	`created_at` integer DEFAULT (cast(unixepoch('subsecond') * 1000 as integer)) NOT NULL,
-	FOREIGN KEY (`user_id`) REFERENCES `user`(`id`) ON UPDATE no action ON DELETE cascade,
+	FOREIGN KEY (`created_by`) REFERENCES `user`(`id`) ON UPDATE no action ON DELETE cascade,
 	FOREIGN KEY (`webpage_id`) REFERENCES `webpage`(`id`) ON UPDATE no action ON DELETE cascade
 );
 --> statement-breakpoint
-CREATE INDEX `summary_user_id_idx` ON `summary` (`user_id`);--> statement-breakpoint
+CREATE INDEX `summary_created_by_idx` ON `summary` (`created_by`);--> statement-breakpoint
 CREATE INDEX `summary_webpage_id_idx` ON `summary` (`webpage_id`);--> statement-breakpoint
 CREATE INDEX `summary_type_idx` ON `summary` (`type`);--> statement-breakpoint
 CREATE INDEX `summary_created_at_idx` ON `summary` (`created_at`);--> statement-breakpoint
-CREATE INDEX `summary_user_webpage_idx` ON `summary` (`user_id`,`webpage_id`);--> statement-breakpoint
+CREATE INDEX `summary_created_by_webpage_idx` ON `summary` (`created_by`,`webpage_id`);--> statement-breakpoint
 CREATE TABLE `user_note` (
 	`id` text PRIMARY KEY NOT NULL,
 	`user_id` text NOT NULL,

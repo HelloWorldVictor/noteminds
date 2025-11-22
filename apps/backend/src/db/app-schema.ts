@@ -45,7 +45,8 @@ export const summary = sqliteTable(
     id: text("id")
       .primaryKey()
       .$defaultFn(() => crypto.randomUUID()),
-    userId: text("user_id")
+    title: text("title").notNull(),
+    createdBy: text("created_by")
       .notNull()
       .references(() => user.id, { onDelete: "cascade" }),
     webpageId: text("webpage_id")
@@ -66,11 +67,11 @@ export const summary = sqliteTable(
       .notNull(),
   },
   (table) => [
-    index("summary_user_id_idx").on(table.userId),
+    index("summary_created_by_idx").on(table.createdBy),
     index("summary_webpage_id_idx").on(table.webpageId),
     index("summary_type_idx").on(table.type),
     index("summary_created_at_idx").on(table.createdAt),
-    index("summary_user_webpage_idx").on(table.userId, table.webpageId),
+    index("summary_created_by_webpage_idx").on(table.createdBy, table.webpageId),
   ]
 );
 

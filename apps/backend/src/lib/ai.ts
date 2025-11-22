@@ -1,16 +1,15 @@
 import { google } from "@ai-sdk/google";
-import { generateObject, generateText, streamText } from "ai";
+import { streamObject } from "ai";
 import { z } from "zod";
 import type { LanguageModel } from "ai";
+import { db, summary } from "@/db";
 
-export const model: LanguageModel = google("gemini-2.0-flash-exp");
+export const aiModel: LanguageModel = google("gemini-2.0-flash-lite");
 
 // Schemas for structured AI outputs
 export const summarySchema = z.object({
   title: z.string().describe("A concise title for the summary"),
   content: z.string().describe("The main summary content"),
-  keyPoints: z.array(z.string()).describe("3-5 key points from the content"),
-  wordCount: z.number().describe("Word count of the summary"),
 });
 
 export const quizSchema = z.object({
@@ -71,58 +70,81 @@ export const resourceSchema = z.object({
     })
   ),
 });
-
 // AI service class
 export class AIService {
+  private userId: string;
+
+  constructor(userId: string) {
+    this.userId = userId;
+    console.log(`[AI Service] Instance created for user: ${userId}`);
+  }
+
   /**
    * Generate a summary with streaming support
    */
-  async generateSummary(
-    content: string,
-    type: "brief" | "detailed" | "bullet_points" = "brief",
-    stream = false
-  ) {
+  async generateSummary({
+    webpageId,
+    content,
+    type = "brief",
+    systemPrompt = "You are an AI assistant that helps generate concise and clear summaries of educational content. Focus on extracting key information, main ideas, and important details while maintaining clarity and educational value.",
+  }: {
+    webpageId: string;
+    content: string;
+    type?: "brief" | "detailed" | "bullet_points";
+    systemPrompt?: string;
+  }) {
+    console.log(`[AI Service] Generating summary for user: ${this.userId}`);
     const prompt = this.buildSummaryPrompt(content, type);
 
-    if (stream) {
-      return streamText({
-        model,
-        prompt,
-        temperature: 0.3,
-      });
-    }
+    const createdBy = this.userId;
 
-    return generateObject({
-      model,
+    return streamObject({
+      model: aiModel,
       schema: summarySchema,
       prompt,
+      system: systemPrompt,
       temperature: 0.3,
+      onFinish({ object }) {
+        if (!object) {
+          return;
+        }
+        db.insert(summary).values({
+          webpageId,
+          title: object.title,
+          content: object.content,
+          createdBy,
+          type,
+          wordCount: object.content.split(" ").length,
+          metadata: {
+            model: "gemini-2.0-flash-lite",
+          },
+        });
+      },
     });
   }
 
   /**
    * Generate quiz questions with streaming support
    */
-  async generateQuiz(
-    content: string,
-    difficulty: "easy" | "medium" | "hard" = "medium",
+  async generateQuiz({
+    content,
+    difficulty = "medium",
     questionCount = 5,
-    stream = false
-  ) {
+    systemPrompt = "You are an AI assistant that creates educational quiz questions. Generate questions that test understanding and critical thinking, not just memorization. Provide clear explanations for correct answers and ensure questions are relevant to the learning objectives.",
+  }: {
+    content: string;
+    difficulty?: "easy" | "medium" | "hard";
+    questionCount?: number;
+    systemPrompt?: string;
+  }) {
+    console.log(`[AI Service] Generating quiz for user: ${this.userId}`);
     const prompt = this.buildQuizPrompt(content, difficulty, questionCount);
 
-    if (stream) {
-      return streamText({
-        model,
-        prompt,
-        temperature: 0.4,
-      });
-    }
-
-    return generateObject({
-      model,
+    return streamObject({
+      model: aiModel,
       schema: quizSchema,
       prompt,
+      system: systemPrompt,
       temperature: 0.4,
     });
   }
@@ -130,26 +152,25 @@ export class AIService {
   /**
    * Generate flashcards with streaming support
    */
-  async generateFlashcards(
-    content: string,
+  async generateFlashcards({
+    content,
     count = 10,
-    difficulty: "easy" | "medium" | "hard" = "medium",
-    stream = false
-  ) {
+    difficulty = "medium",
+    systemPrompt = "You are an AI assistant that creates educational flashcards for spaced repetition learning. Design cards that promote active recall, with clear questions on the front and concise but complete answers on the back.",
+  }: {
+    content: string;
+    count?: number;
+    difficulty?: "easy" | "medium" | "hard";
+    systemPrompt?: string;
+  }) {
+    console.log(`[AI Service] Generating flashcards for user: ${this.userId}`);
     const prompt = this.buildFlashcardPrompt(content, count, difficulty);
 
-    if (stream) {
-      return streamText({
-        model,
-        prompt,
-        temperature: 0.4,
-      });
-    }
-
-    return generateObject({
-      model,
+    return streamObject({
+      model: aiModel,
       schema: flashcardSchema,
       prompt,
+      system: systemPrompt,
       temperature: 0.4,
     });
   }
@@ -157,13 +178,23 @@ export class AIService {
   /**
    * Generate related resources
    */
-  async generateResources(content: string, title: string) {
+  async generateResources({
+    content,
+    title,
+    systemPrompt = "You are an AI assistant that recommends high-quality educational resources. Suggest relevant articles, videos, papers, tutorials, and courses that complement and expand on the given content. Focus on accessible, free, and widely available resources.",
+  }: {
+    content: string;
+    title: string;
+    systemPrompt?: string;
+  }) {
+    console.log(`[AI Service] Generating resources for user: ${this.userId}`);
     const prompt = this.buildResourcePrompt(content, title);
 
-    return generateObject({
-      model,
+    return streamObject({
+      model: aiModel,
       schema: resourceSchema,
       prompt,
+      system: systemPrompt,
       temperature: 0.6,
     });
   }
@@ -257,5 +288,3 @@ Suggest resources that would help someone learn more about these topics.
 `;
   }
 }
-
-export const aiService = new AIService();

@@ -1,25 +1,32 @@
 import { createRouter } from "@/lib/create-app";
 import { Elysia, t } from "elysia";
+import { db, summary, webpage } from "@/db";
+import { eq, and } from "drizzle-orm";
 
 export const summaryRoutes = createRouter({ prefix: "/summary" })
   .post(
     "/generate",
-    async ({ body, set }) => {
+    async ({ body, set, user, aiService }) => {
       try {
-        const { webpageId, userId, type, stream } = body;
+        const { webpageId, type } = body;
+        const page = await db.query.webpage.findFirst({
+          where: and(eq(webpage.id, webpageId), eq(webpage.createdBy, user.id)),
+        });
+        console.log("Found webpage for summary:", page);
+        if (!page) {
+          set.status = 404;
+          return {
+            success: false,
+            message: "Webpage not found",
+          };
+        }
+        const result = await aiService.generateSummary({
+          webpageId,
+          content: page.extractedContent,
+          type,
+        });
 
-        // TODO: Implement summary generation with streaming
-        set.status = 501;
-        return {
-          success: false,
-          message: "Summary generation endpoint - coming soon",
-          data: {
-            webpageId,
-            userId,
-            type,
-            stream,
-          },
-        };
+        return result.toTextStreamResponse();
       } catch (error) {
         set.status = 500;
         return {
@@ -30,9 +37,9 @@ export const summaryRoutes = createRouter({ prefix: "/summary" })
       }
     },
     {
+      auth: true,
       body: t.Object({
         webpageId: t.String(),
-        userId: t.String(),
         type: t.Optional(
           t.Union([
             t.Literal("brief"),
@@ -40,7 +47,6 @@ export const summaryRoutes = createRouter({ prefix: "/summary" })
             t.Literal("bullet_points"),
           ])
         ),
-        stream: t.Optional(t.Boolean()),
       }),
       detail: {
         summary: "Generate AI summary of webpage content",
@@ -52,21 +58,41 @@ export const summaryRoutes = createRouter({ prefix: "/summary" })
   )
   .get(
     "/webpage/:webpageId",
-    async ({ params, query, set }) => {
+    async ({ params, query, set, user }) => {
       try {
         const { webpageId } = params;
-        const { userId, type } = query;
+        const { type } = query;
 
-        // TODO: Implement get summaries for webpage
-        set.status = 501;
+        // Check if webpage exists and belongs to user
+        const page = await db.query.webpage.findFirst({
+          where: and(eq(webpage.id, webpageId), eq(webpage.createdBy, user.id)),
+        });
+
+        if (!page) {
+          set.status = 404;
+          return {
+            success: false,
+            message: "Webpage not found",
+          };
+        }
+
+        const conditions = [
+          eq(summary.webpageId, webpageId),
+          eq(summary.createdBy, user.id),
+        ];
+
+        if (type) {
+          conditions.push(eq(summary.type, type));
+        }
+
+        const summaries = await db.query.summary.findMany({
+          where: and(...conditions),
+          orderBy: (summary, { desc }) => [desc(summary.createdAt)],
+        });
+
         return {
-          success: false,
-          message: "Get webpage summaries endpoint - coming soon",
-          data: {
-            webpageId,
-            userId,
-            type,
-          },
+          success: true,
+          data: summaries,
         };
       } catch (error) {
         set.status = 500;
@@ -78,11 +104,11 @@ export const summaryRoutes = createRouter({ prefix: "/summary" })
       }
     },
     {
+      auth: true,
       params: t.Object({
         webpageId: t.String(),
       }),
       query: t.Object({
-        userId: t.Optional(t.String()),
         type: t.Optional(
           t.Union([
             t.Literal("brief"),
@@ -94,29 +120,77 @@ export const summaryRoutes = createRouter({ prefix: "/summary" })
       detail: {
         summary: "Get summaries for a specific webpage",
         description:
-          "Retrieve all summaries created for a specific webpage, optionally filtered by user or type",
+          "Retrieve all summaries created for a specific webpage, optionally filtered by type",
         tags: ["Summary"],
       },
     }
   )
   .get(
     "/user/:userId",
-    async ({ params, query, set }) => {
+    async ({ params, query, set, user }) => {
       try {
         const { userId } = params;
+
+        // Ensure user can only access their own summaries
+        if (userId !== user.id) {
+          set.status = 403;
+          return {
+            success: false,
+            message: "Forbidden: Cannot access other users' summaries",
+          };
+        }
+
         const { limit = 10, offset = 0, webpageId, type } = query;
 
-        // TODO: Implement get user summaries
-        set.status = 501;
+        const conditions = [eq(summary.createdBy, userId)];
+
+        if (webpageId) {
+          // Check if webpage exists and belongs to user
+          const page = await db.query.webpage.findFirst({
+            where: and(
+              eq(webpage.id, webpageId),
+              eq(webpage.createdBy, user.id)
+            ),
+          });
+
+          if (!page) {
+            set.status = 404;
+            return {
+              success: false,
+              message: "Webpage not found",
+            };
+          }
+
+          conditions.push(eq(summary.webpageId, webpageId));
+        }
+
+        if (type) {
+          conditions.push(eq(summary.type, type));
+        }
+
+        const summaries = await db.query.summary.findMany({
+          where: and(...conditions),
+          limit: Number(limit),
+          offset: Number(offset),
+          orderBy: (summary, { desc }) => [desc(summary.createdAt)],
+          with: {
+            webpage: {
+              columns: {
+                id: true,
+                title: true,
+                url: true,
+              },
+            },
+          },
+        });
+
         return {
-          success: false,
-          message: "Get user summaries endpoint - coming soon",
-          data: {
-            userId,
-            limit,
-            offset,
-            webpageId,
-            type,
+          success: true,
+          data: summaries,
+          pagination: {
+            limit: Number(limit),
+            offset: Number(offset),
+            total: summaries.length,
           },
         };
       } catch (error) {
@@ -129,6 +203,7 @@ export const summaryRoutes = createRouter({ prefix: "/summary" })
       }
     },
     {
+      auth: true,
       params: t.Object({
         userId: t.String(),
       }),
@@ -154,18 +229,34 @@ export const summaryRoutes = createRouter({ prefix: "/summary" })
   )
   .get(
     "/:id",
-    async ({ params, set }) => {
+    async ({ params, set, user }) => {
       try {
         const { id } = params;
 
-        // TODO: Implement get summary by ID
-        set.status = 501;
-        return {
-          success: false,
-          message: "Get summary by ID endpoint - coming soon",
-          data: {
-            id,
+        const summaryRecord = await db.query.summary.findFirst({
+          where: and(eq(summary.id, id), eq(summary.createdBy, user.id)),
+          with: {
+            webpage: {
+              columns: {
+                id: true,
+                title: true,
+                url: true,
+              },
+            },
           },
+        });
+
+        if (!summaryRecord) {
+          set.status = 404;
+          return {
+            success: false,
+            message: "Summary not found",
+          };
+        }
+
+        return {
+          success: true,
+          data: summaryRecord,
         };
       } catch (error) {
         set.status = 500;
@@ -177,6 +268,7 @@ export const summaryRoutes = createRouter({ prefix: "/summary" })
       }
     },
     {
+      auth: true,
       params: t.Object({
         id: t.String(),
       }),
@@ -189,20 +281,29 @@ export const summaryRoutes = createRouter({ prefix: "/summary" })
   )
   .delete(
     "/:id",
-    async ({ params, body, set }) => {
+    async ({ params, set, user }) => {
       try {
         const { id } = params;
-        const { userId } = body;
 
-        // TODO: Implement delete summary
-        set.status = 501;
+        // Check if summary exists and belongs to user
+        const summaryRecord = await db.query.summary.findFirst({
+          where: and(eq(summary.id, id), eq(summary.createdBy, user.id)),
+        });
+
+        if (!summaryRecord) {
+          set.status = 404;
+          return {
+            success: false,
+            message:
+              "Summary not found or you don't have permission to delete it",
+          };
+        }
+
+        await db.delete(summary).where(eq(summary.id, id));
+
         return {
-          success: false,
-          message: "Delete summary endpoint - coming soon",
-          data: {
-            id,
-            userId,
-          },
+          success: true,
+          message: "Summary deleted successfully",
         };
       } catch (error) {
         set.status = 500;
@@ -214,11 +315,9 @@ export const summaryRoutes = createRouter({ prefix: "/summary" })
       }
     },
     {
+      auth: true,
       params: t.Object({
         id: t.String(),
-      }),
-      body: t.Object({
-        userId: t.String(),
       }),
       detail: {
         summary: "Delete summary by ID",
@@ -230,20 +329,43 @@ export const summaryRoutes = createRouter({ prefix: "/summary" })
   )
   .delete(
     "/webpage/:webpageId",
-    async ({ params, body, set }) => {
+    async ({ params, body, set, user }) => {
       try {
         const { webpageId } = params;
-        const { userId, type } = body;
+        const { type } = body;
 
-        // TODO: Implement delete webpage summaries
-        set.status = 501;
+        // Check if webpage exists and belongs to user
+        const page = await db.query.webpage.findFirst({
+          where: and(eq(webpage.id, webpageId), eq(webpage.createdBy, user.id)),
+        });
+
+        if (!page) {
+          set.status = 404;
+          return {
+            success: false,
+            message: "Webpage not found",
+          };
+        }
+
+        const conditions = [
+          eq(summary.webpageId, webpageId),
+          eq(summary.createdBy, user.id),
+        ];
+
+        if (type) {
+          conditions.push(eq(summary.type, type));
+        }
+
+        const result = await db
+          .delete(summary)
+          .where(and(...conditions))
+          .returning();
+
         return {
-          success: false,
-          message: "Delete webpage summaries endpoint - coming soon",
+          success: true,
+          message: `Deleted ${result.length} summary(ies) successfully`,
           data: {
-            webpageId,
-            userId,
-            type,
+            deletedCount: result.length,
           },
         };
       } catch (error) {
@@ -256,11 +378,11 @@ export const summaryRoutes = createRouter({ prefix: "/summary" })
       }
     },
     {
+      auth: true,
       params: t.Object({
         webpageId: t.String(),
       }),
       body: t.Object({
-        userId: t.String(),
         type: t.Optional(
           t.Union([
             t.Literal("brief"),

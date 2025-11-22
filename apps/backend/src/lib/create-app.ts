@@ -3,6 +3,7 @@ import cors from "@elysiajs/cors";
 import { node } from "@elysiajs/node";
 import { Elysia } from "elysia";
 import { configureOpenAPI } from "./configure-openapi";
+import { AIService } from "@/lib/ai";
 
 export function createRouter(
   options?: ConstructorParameters<typeof Elysia>[0]
@@ -23,6 +24,7 @@ export function createRouter(
         return {
           user: session.user,
           session: session.session,
+          aiService: new AIService(session.user.id),
         };
       },
     },
