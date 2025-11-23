@@ -1,3 +1,5 @@
+// This file provides AI service utilities.
+// It defines schemas for summaries, quizzes, flashcards, and resources, and a class that wraps calls to the Gemini model.
 import { google } from "@ai-sdk/google";
 import { streamObject } from "ai";
 import { z } from "zod";
