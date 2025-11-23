@@ -1,3 +1,5 @@
+// This file sets up the authentication client.
+// It creates clients for the popup and content scripts to talk to the auth server.
 import { createAuthClient } from "better-auth/react";
 import { authTokenStorage } from "./auth-storage";
 import { ExtensionMessaging } from "./messaging";
