@@ -1,50 +1,15 @@
 import { google } from "@ai-sdk/google";
-import { streamObject } from "ai";
+import { streamObject, generateObject } from "ai";
 import { z } from "zod";
 import type { LanguageModel } from "ai";
 import { db, summary } from "@/db";
+import { flashcard, quiz } from "@/db/app-schema";
+import { summarySchema, quizSchema, flashcardSchema } from "./schemas";
 
 export const aiModel: LanguageModel = google("gemini-2.0-flash-lite");
 
-// Schemas for structured AI outputs
-export const summarySchema = z.object({
-  title: z.string().describe("A concise title for the summary"),
-  content: z.string().describe("The main summary content"),
-});
-
-export const quizSchema = z.object({
-  title: z.string().describe("Title for the quiz"),
-  description: z.string().describe("Brief description of what the quiz covers"),
-  questions: z.array(
-    z.object({
-      questionText: z.string().describe("The question text"),
-      questionType: z
-        .enum(["multiple_choice", "true_false"])
-        .describe("Type of question"),
-      options: z
-        .array(z.string())
-        .describe("Answer options (for multiple choice)"),
-      correctAnswer: z.string().describe("The correct answer"),
-      explanation: z.string().describe("Explanation of why this is correct"),
-      difficulty: z
-        .enum(["easy", "medium", "hard"])
-        .describe("Question difficulty"),
-    })
-  ),
-});
-
-export const flashcardSchema = z.object({
-  cards: z.array(
-    z.object({
-      front: z.string().describe("Front of the flashcard (question/prompt)"),
-      back: z.string().describe("Back of the flashcard (answer/explanation)"),
-      tags: z.array(z.string()).describe("Tags for categorization"),
-      difficulty: z
-        .enum(["easy", "medium", "hard"])
-        .describe("Card difficulty"),
-    })
-  ),
-});
+// Re-export schemas for convenience
+export { summarySchema, quizSchema, flashcardSchema };
 
 export const resourceSchema = z.object({
   resources: z.array(
@@ -124,55 +89,106 @@ export class AIService {
   }
 
   /**
-   * Generate quiz questions with streaming support
+   * Generate quiz questions and return database record
    */
   async generateQuiz({
+    webpageId,
     content,
-    difficulty = "medium",
     questionCount = 5,
-    systemPrompt = "You are an AI assistant that creates educational quiz questions. Generate questions that test understanding and critical thinking, not just memorization. Provide clear explanations for correct answers and ensure questions are relevant to the learning objectives.",
+    systemPrompt = "You are an expert educator creating quiz questions. Generate multiple-choice questions that test understanding and critical thinking. Each question should have exactly 4 answer options with one correct answer.",
   }: {
+    webpageId: string;
     content: string;
-    difficulty?: "easy" | "medium" | "hard";
     questionCount?: number;
     systemPrompt?: string;
   }) {
-    console.log(`[AI Service] Generating quiz for user: ${this.userId}`);
-    const prompt = this.buildQuizPrompt(content, difficulty, questionCount);
+    console.log(
+      `[AI Service] Generating ${questionCount} quiz questions for user: ${this.userId}`
+    );
+    const prompt = `Generate ${questionCount} multiple-choice quiz questions from this content. Each question should have exactly 4 answer options:\n\n${content}`;
 
-    return streamObject({
+    const createdBy = this.userId;
+
+    // Generate quiz with AI
+    const { object } = await generateObject({
       model: aiModel,
       schema: quizSchema,
       prompt,
       system: systemPrompt,
       temperature: 0.4,
     });
+
+    console.log(
+      `[AI Service] Persisting quiz with ${object.questions.length} questions to database`
+    );
+
+    // Save to database and return the created record
+    const [createdQuiz] = await db
+      .insert(quiz)
+      .values({
+        userId: createdBy,
+        webpageId,
+        title: object.title,
+        questions: object.questions,
+      })
+      .returning();
+
+    console.log(`[AI Service] Successfully saved quiz`);
+    return createdQuiz;
   }
 
   /**
-   * Generate flashcards with streaming support
+   * Generate flashcards and return database records
    */
   async generateFlashcards({
+    webpageId,
     content,
     count = 10,
-    difficulty = "medium",
-    systemPrompt = "You are an AI assistant that creates educational flashcards for spaced repetition learning. Design cards that promote active recall, with clear questions on the front and concise but complete answers on the back.",
+    systemPrompt = "You are an expert educator creating flashcards for students. Generate high-quality flashcards based on the provided content. Each flashcard should test a key concept or fact. Keep questions clear and answers concise.",
   }: {
+    webpageId: string;
     content: string;
     count?: number;
-    difficulty?: "easy" | "medium" | "hard";
     systemPrompt?: string;
   }) {
-    console.log(`[AI Service] Generating flashcards for user: ${this.userId}`);
-    const prompt = this.buildFlashcardPrompt(content, count, difficulty);
+    console.log(
+      `[AI Service] Generating ${count} flashcards for user: ${this.userId}`
+    );
+    const prompt = `Generate ${count} flashcards from this content:\n\n${content}`;
 
-    return streamObject({
+    const createdBy = this.userId;
+
+    // Generate flashcards with AI
+    const { object } = await generateObject({
       model: aiModel,
       schema: flashcardSchema,
       prompt,
       system: systemPrompt,
       temperature: 0.4,
     });
+
+    console.log(
+      `[AI Service] Persisting ${object.flashcards.length} flashcards to database`
+    );
+
+    // Save to database and return the created records
+    const createdFlashcards = await db
+      .insert(flashcard)
+      .values(
+        object.flashcards.map((card) => ({
+          userId: createdBy,
+          webpageId,
+          front: card.front,
+          back: card.back,
+          practiceCount: 0,
+        }))
+      )
+      .returning();
+
+    console.log(
+      `[AI Service] Successfully saved ${createdFlashcards.length} flashcards`
+    );
+    return createdFlashcards;
   }
 
   /**
@@ -223,50 +239,6 @@ Instructions:
 - Keep the language accessible
 
 Generate a structured summary with a title, main content, and key points.
-`;
-  }
-
-  private buildQuizPrompt(
-    content: string,
-    difficulty: string,
-    count: number
-  ): string {
-    return `
-Create ${count} ${difficulty} quiz questions based on the following content:
-
-${content}
-
-Instructions:
-- Create questions that test understanding, not just memorization
-- Include both multiple choice and true/false questions
-- Provide clear explanations for correct answers
-- Make sure questions are relevant to the main concepts
-- Vary the difficulty appropriately for ${difficulty} level
-- Focus on key learning objectives
-
-Generate a structured quiz with title, description, and questions.
-`;
-  }
-
-  private buildFlashcardPrompt(
-    content: string,
-    count: number,
-    difficulty: string
-  ): string {
-    return `
-Create ${count} flashcards at ${difficulty} difficulty level based on the following content:
-
-${content}
-
-Instructions:
-- Create cards that promote active recall
-- Front should have clear, specific questions or prompts
-- Back should have concise but complete answers
-- Include relevant tags for organization
-- Cover the most important concepts
-- Make cards appropriate for ${difficulty} level study
-
-Generate flashcards that will help with spaced repetition learning.
 `;
   }
 

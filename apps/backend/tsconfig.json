@@ -1,6 +1,7 @@
 {
-  "extends": "@repo/typescript-config/node.json",
+  "extends": "@noteminds/typescript-config/node.json",
   "compilerOptions": {
+    "strict": true,
     "paths": {
       "@/*": ["./src/*"]
     }

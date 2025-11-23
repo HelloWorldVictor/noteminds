@@ -1,5 +1,5 @@
 {
-  "name": "app",
+  "name": "@noteminds/backend",
   "version": "1.0.50",
   "scripts": {
     "dev": "tsx watch --env-file=.env src/index.ts",
@@ -15,6 +15,7 @@
   "dependencies": {
     "@ai-sdk/google": "^2.0.26",
     "@elysiajs/cors": "^1.4.0",
+    "@elysiajs/eden": "1.4.1",
     "@elysiajs/node": "^1.4.1",
     "@elysiajs/openapi": "^1.4.11",
     "@mozilla/readability": "^0.6.0",
@@ -34,13 +35,22 @@
     "zod": "^4.1.12"
   },
   "devDependencies": {
-    "@repo/eslint-config": "workspace:*",
-    "@repo/prettier-config": "workspace:*",
-    "@repo/typescript-config": "workspace:*",
+    "@noteminds/eslint-config": "workspace:*",
+    "@noteminds/prettier-config": "workspace:*",
+    "@noteminds/typescript-config": "workspace:*",
     "@types/better-sqlite3": "^7.6.13",
     "bun-types": "latest",
     "drizzle-kit": "^0.31.6",
     "tsx": "^4.20.6"
   },
-  "module": "src/index.js"
+  "module": "src/index.js",
+  "exports": {
+    ".": "./src/index.ts",
+    "./db": "./src/db/index.ts",
+    "./db/schema": "./src/db/app-schema.ts",
+    "./lib/ai": "./src/lib/ai.ts",
+    "./lib/auth": "./src/lib/auth.ts",
+    "./lib/env": "./src/lib/env.ts",
+    "./lib/schemas": "./src/lib/schemas.ts"
+  }
 }

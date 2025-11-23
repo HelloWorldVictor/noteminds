@@ -22,6 +22,16 @@ export interface ProcessedContent {
 export class ContentProcessor {
   private turndownService: TurndownService;
 
+  // Canvas LMS-specific content selectors
+  private canvasSelectors = {
+    courseContent: "#content",
+    assignmentContent: ".show-content",
+    discussionContent: ".discussion-topic",
+    moduleContent: ".context_module_item",
+    quizContent: "#questions",
+    syllabusContent: "#course_syllabus",
+  };
+
   constructor() {
     this.turndownService = new TurndownService({
       headingStyle: "atx",
@@ -31,20 +41,96 @@ export class ContentProcessor {
   }
 
   /**
+   * Check if URL is a Canvas LMS page
+   */
+  private isCanvasUrl(url?: string): boolean {
+    if (!url) return false;
+    return url.includes("instructure.com");
+  }
+
+  /**
+   * Extract Canvas-specific content from HTML
+   */
+  private extractCanvasContent(
+    html: string
+  ): { content: string; contentType?: string } | null {
+    const $ = cheerio.load(html);
+
+    // Try Canvas-specific selectors
+    for (const [type, selector] of Object.entries(this.canvasSelectors)) {
+      const element = $(selector);
+      const elementHtml = element.html();
+      if (element.length && elementHtml && elementHtml.trim().length > 50) {
+        return {
+          content: elementHtml,
+          contentType: type,
+        };
+      }
+    }
+
+    return null;
+  }
+
+  /**
+   * Extract Canvas-specific metadata
+   */
+  private extractCanvasMetadata(html: string) {
+    const $ = cheerio.load(html);
+
+    const courseTitle = $(".ellipsible").text().trim();
+    const breadcrumbs = $("#breadcrumbs a")
+      .map((_, el) => $(el).text().trim())
+      .get()
+      .filter(Boolean);
+
+    return {
+      author: courseTitle || undefined,
+      breadcrumbs: breadcrumbs.length > 0 ? breadcrumbs : undefined,
+      description: breadcrumbs.join(" > ") || undefined,
+    };
+  }
+
+  /**
    * Process HTML content and extract clean, readable content
    */
   async processHtml(html: string, url?: string): Promise<ProcessedContent> {
     try {
-      // Create DOM from HTML
-      const dom = new JSDOM(html, { url });
-      const document = dom.window.document;
+      let article: any;
+      let canvasMetadata: any = {};
 
-      // Use Readability to extract main content
-      const reader = new Readability(document);
-      const article = reader.parse();
+      // Check if this is Canvas LMS content
+      if (this.isCanvasUrl(url)) {
+        const canvasContent = this.extractCanvasContent(html);
 
+        if (canvasContent) {
+          // Create a simplified article object for Canvas content
+          const $ = cheerio.load(canvasContent.content);
+          const textContent = $.text().trim();
+
+          article = {
+            title:
+              this.extractTitle(new JSDOM(html).window.document) ||
+              "Canvas Content",
+            content: canvasContent.content,
+            textContent,
+          };
+
+          // Extract Canvas-specific metadata
+          canvasMetadata = this.extractCanvasMetadata(html);
+          canvasMetadata.contentType = canvasContent.contentType;
+        }
+      }
+
+      // Fallback to Readability if Canvas extraction failed or not Canvas
       if (!article) {
-        throw new Error("Failed to extract readable content from HTML");
+        const dom = new JSDOM(html, { url });
+        const document = dom.window.document;
+        const reader = new Readability(document);
+        article = reader.parse();
+
+        if (!article) {
+          throw new Error("Failed to extract readable content from HTML");
+        }
       }
 
       // Load content into Cheerio for additional processing
@@ -81,11 +167,21 @@ export class ContentProcessor {
       const contentHash = this.generateContentHash(textContent);
 
       // Extract additional metadata from the original document
-      const metadata = this.extractMetadata(document, {
+      const dom = new JSDOM(html, { url });
+      const baseMetadata = this.extractMetadata(dom.window.document, {
         wordCount,
         readingTime,
         contentHash,
       });
+
+      // Merge with Canvas metadata if available
+      const metadata = {
+        ...baseMetadata,
+        ...canvasMetadata,
+        wordCount: baseMetadata.wordCount,
+        readingTime: baseMetadata.readingTime,
+        contentHash: baseMetadata.contentHash,
+      };
 
       return {
         title: article.title || this.extractTitle(document) || "Untitled",

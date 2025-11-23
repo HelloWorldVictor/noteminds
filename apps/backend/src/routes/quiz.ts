@@ -1,24 +1,38 @@
 import { createRouter } from "@/lib/create-app";
 import { Elysia, t } from "elysia";
+import { db, quiz, webpage } from "@/db";
+import { and, desc, eq } from "drizzle-orm";
 
 export const quizRoutes = createRouter({ prefix: "/quiz" })
   .post(
     "/generate",
-    async ({ body, set }) => {
+    async ({ body, set, user, aiService }) => {
       try {
-        const { webpageId, difficulty, questionCount, stream } = body;
+        const { webpageId, questionCount = 5 } = body;
 
-        // TODO: Implement quiz generation with streaming
-        set.status = 501;
+        // Verify webpage exists and user owns it
+        const webpageRecord = await db.query.webpage.findFirst({
+          where: and(eq(webpage.id, webpageId), eq(webpage.createdBy, user.id)),
+        });
+
+        if (!webpageRecord) {
+          set.status = 404;
+          return {
+            success: false,
+            message: "Webpage not found",
+          };
+        }
+
+        // Generate AI quiz and return database record
+        const quiz = await aiService.generateQuiz({
+          webpageId,
+          content: webpageRecord.extractedContent,
+          questionCount,
+        });
+
         return {
-          success: false,
-          message: "Quiz generation endpoint - coming soon",
-          data: {
-            webpageId,
-            difficulty,
-            questionCount,
-            stream,
-          },
+          success: true,
+          data: quiz,
         };
       } catch (error) {
         set.status = 500;
@@ -30,34 +44,99 @@ export const quizRoutes = createRouter({ prefix: "/quiz" })
       }
     },
     {
+      auth: true,
       body: t.Object({
         webpageId: t.String(),
-        difficulty: t.Optional(
-          t.Union([t.Literal("easy"), t.Literal("medium"), t.Literal("hard")])
-        ),
         questionCount: t.Optional(t.Number({ minimum: 1, maximum: 20 })),
-        stream: t.Optional(t.Boolean()),
       }),
       detail: {
         summary: "Generate AI quiz from webpage content",
-        description:
-          "Create a quiz with questions based on webpage content with optional streaming",
+        description: "Generate AI quiz and return created database record",
         tags: ["AI", "Quiz"],
       },
     }
   )
   .get(
+    "/webpage/:webpageId",
+    async ({ params, set, user }) => {
+      try {
+        const { webpageId } = params;
+
+        // Verify webpage exists
+        const webpageRecord = await db.query.webpage.findFirst({
+          where: and(eq(webpage.id, webpageId), eq(webpage.createdBy, user.id)),
+        });
+
+        if (!webpageRecord) {
+          set.status = 404;
+          return {
+            success: false,
+            message: "Webpage not found",
+            data: [],
+          };
+        }
+
+        // Get all quizzes for this webpage
+        const quizzes = await db.query.quiz.findMany({
+          where: and(eq(quiz.webpageId, webpageId), eq(quiz.userId, user.id)),
+          orderBy: [desc(quiz.createdAt)],
+        });
+
+        return {
+          success: true,
+          data: quizzes,
+        };
+      } catch (error) {
+        set.status = 500;
+        return {
+          success: false,
+          message: "Failed to fetch quizzes",
+          error: error instanceof Error ? error.message : "Unknown error",
+        };
+      }
+    },
+    {
+      auth: true,
+      params: t.Object({
+        webpageId: t.String(),
+      }),
+      detail: {
+        summary: "Get quizzes for a webpage",
+        description: "Retrieve all quizzes created for a specific webpage",
+        tags: ["Quiz"],
+      },
+    }
+  )
+  .get(
     "/:id",
-    async ({ params, set }) => {
+    async ({ params, set, user }) => {
       try {
         const { id } = params;
 
-        // TODO: Implement get quiz by ID with questions
-        set.status = 501;
+        // Find quiz and verify ownership
+        const quizRecord = await db.query.quiz.findFirst({
+          where: eq(quiz.id, id),
+        });
+
+        if (!quizRecord) {
+          set.status = 404;
+          return {
+            success: false,
+            message: "Quiz not found",
+          };
+        }
+
+        if (quizRecord.userId !== user.id) {
+          set.status = 403;
+          return {
+            success: false,
+            message: "Unauthorized",
+          };
+        }
+
         return {
-          success: false,
-          message: "Get quiz endpoint - coming soon",
-          data: { id },
+          success: true,
+          data: quizRecord,
         };
       } catch (error) {
         set.status = 500;
@@ -69,6 +148,7 @@ export const quizRoutes = createRouter({ prefix: "/quiz" })
       }
     },
     {
+      auth: true,
       params: t.Object({
         id: t.String(),
       }),
@@ -79,47 +159,57 @@ export const quizRoutes = createRouter({ prefix: "/quiz" })
       },
     }
   )
-  .post(
-    "/:id/attempt",
-    async ({ params, body, set }) => {
+  .delete(
+    "/:id",
+    async ({ params, set, user }) => {
       try {
-        const { id: quizId } = params;
-        const { userId, answers } = body;
+        const { id } = params;
 
-        // TODO: Implement quiz attempt submission
-        set.status = 501;
+        // Find quiz and verify ownership
+        const quizRecord = await db.query.quiz.findFirst({
+          where: eq(quiz.id, id),
+        });
+
+        if (!quizRecord) {
+          set.status = 404;
+          return {
+            success: false,
+            message: "Quiz not found",
+          };
+        }
+
+        if (quizRecord.userId !== user.id) {
+          set.status = 403;
+          return {
+            success: false,
+            message: "Unauthorized",
+          };
+        }
+
+        // Delete quiz
+        await db.delete(quiz).where(eq(quiz.id, id));
+
         return {
-          success: false,
-          message: "Quiz attempt endpoint - coming soon",
-          data: {
-            quizId,
-            userId,
-            answersCount: Object.keys(answers).length,
-          },
+          success: true,
+          message: "Quiz deleted",
         };
       } catch (error) {
         set.status = 500;
         return {
           success: false,
-          message: "Failed to submit quiz attempt",
+          message: "Failed to delete quiz",
           error: error instanceof Error ? error.message : "Unknown error",
         };
       }
     },
     {
+      auth: true,
       params: t.Object({
         id: t.String(),
       }),
-      body: t.Object({
-        userId: t.String(),
-        answers: t.Record(
-          t.String(),
-          t.Union([t.String(), t.Array(t.String())])
-        ),
-      }),
       detail: {
-        summary: "Submit quiz attempt",
-        description: "Submit answers for a quiz attempt",
+        summary: "Delete a quiz",
+        description: "Remove a quiz by ID",
         tags: ["Quiz"],
       },
     }

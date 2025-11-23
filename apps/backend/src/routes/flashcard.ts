@@ -1,24 +1,38 @@
 import { createRouter } from "@/lib/create-app";
 import { Elysia, t } from "elysia";
+import { db, flashcard, webpage } from "@/db";
+import { and, desc, eq } from "drizzle-orm";
 
 export const flashcardRoutes = createRouter({ prefix: "/flashcard" })
   .post(
     "/generate",
-    async ({ body, set }) => {
+    async ({ body, set, user, aiService }) => {
       try {
-        const { webpageId, count, difficulty, stream } = body;
+        const { webpageId, count = 10 } = body;
 
-        // TODO: Implement flashcard generation with streaming
-        set.status = 501;
+        // Verify webpage exists and user owns it
+        const webpageRecord = await db.query.webpage.findFirst({
+          where: and(eq(webpage.id, webpageId), eq(webpage.createdBy, user.id)),
+        });
+
+        if (!webpageRecord) {
+          set.status = 404;
+          return {
+            success: false,
+            message: "Webpage not found",
+          };
+        }
+
+        // Generate AI flashcards and return database records
+        const flashcards = await aiService.generateFlashcards({
+          webpageId,
+          content: webpageRecord.extractedContent,
+          count,
+        });
+
         return {
-          success: false,
-          message: "Flashcard generation endpoint - coming soon",
-          data: {
-            webpageId,
-            count,
-            difficulty,
-            stream,
-          },
+          success: true,
+          data: flashcards,
         };
       } catch (error) {
         set.status = 500;
@@ -30,102 +44,185 @@ export const flashcardRoutes = createRouter({ prefix: "/flashcard" })
       }
     },
     {
+      auth: true,
       body: t.Object({
         webpageId: t.String(),
-        count: t.Optional(t.Number({ minimum: 1, maximum: 50 })),
-        difficulty: t.Optional(
-          t.Union([t.Literal("easy"), t.Literal("medium"), t.Literal("hard")])
-        ),
-        stream: t.Optional(t.Boolean()),
+        count: t.Optional(t.Number({ minimum: 1, maximum: 20 })),
       }),
       detail: {
         summary: "Generate AI flashcards from webpage content",
         description:
-          "Create flashcards based on webpage content with optional streaming",
+          "Generate AI flashcards and return created database records",
         tags: ["AI", "Flashcard"],
       },
     }
   )
   .get(
-    "/user/:userId/review",
-    async ({ params, query, set }) => {
+    "/webpage/:webpageId",
+    async ({ params, set, user }) => {
       try {
-        const { userId } = params;
-        const { limit = 20 } = query;
+        const { webpageId } = params;
 
-        // TODO: Implement get flashcards due for review
-        set.status = 501;
+        // Verify webpage exists
+        const webpageRecord = await db.query.webpage.findFirst({
+          where: and(eq(webpage.id, webpageId), eq(webpage.createdBy, user.id)),
+        });
+
+        if (!webpageRecord) {
+          set.status = 404;
+          return {
+            success: false,
+            message: "Webpage not found",
+            data: [],
+          };
+        }
+
+        // Get all flashcards for this webpage
+        const cards = await db.query.flashcard.findMany({
+          where: and(
+            eq(flashcard.webpageId, webpageId),
+            eq(flashcard.userId, user.id)
+          ),
+          orderBy: [desc(flashcard.createdAt)],
+        });
+
         return {
-          success: false,
-          message: "Get review flashcards endpoint - coming soon",
-          data: {
-            userId,
-            limit,
-          },
+          success: true,
+          data: cards,
         };
       } catch (error) {
         set.status = 500;
         return {
           success: false,
-          message: "Failed to get review flashcards",
+          message: "Failed to fetch flashcards",
           error: error instanceof Error ? error.message : "Unknown error",
         };
       }
     },
     {
+      auth: true,
       params: t.Object({
-        userId: t.String(),
-      }),
-      query: t.Object({
-        limit: t.Optional(t.Numeric()),
+        webpageId: t.String(),
       }),
       detail: {
-        summary: "Get flashcards due for review",
-        description:
-          "Retrieve flashcards that are due for spaced repetition review",
-        tags: ["Flashcard", "Spaced Repetition"],
+        summary: "Get flashcards for a webpage",
+        description: "Retrieve all flashcards created for a specific webpage",
+        tags: ["Flashcard"],
       },
     }
   )
-  .post(
-    "/:id/review",
-    async ({ params, body, set }) => {
+  .patch(
+    "/:id/practice",
+    async ({ params, set, user }) => {
       try {
         const { id } = params;
-        const { userId, quality } = body;
 
-        // TODO: Implement flashcard review submission (spaced repetition)
-        set.status = 501;
+        // Find flashcard and verify ownership
+        const card = await db.query.flashcard.findFirst({
+          where: eq(flashcard.id, id),
+        });
+
+        if (!card) {
+          set.status = 404;
+          return {
+            success: false,
+            message: "Flashcard not found",
+          };
+        }
+
+        if (card.userId !== user.id) {
+          set.status = 403;
+          return {
+            success: false,
+            message: "Unauthorized",
+          };
+        }
+
+        // Increment practice count
+        await db
+          .update(flashcard)
+          .set({
+            practiceCount: card.practiceCount + 1,
+          })
+          .where(eq(flashcard.id, id));
+
         return {
-          success: false,
-          message: "Flashcard review endpoint - coming soon",
-          data: {
-            id,
-            userId,
-            quality,
-          },
+          success: true,
+          message: "Practice count updated",
         };
       } catch (error) {
         set.status = 500;
         return {
           success: false,
-          message: "Failed to submit flashcard review",
+          message: "Failed to update practice count",
           error: error instanceof Error ? error.message : "Unknown error",
         };
       }
     },
     {
+      auth: true,
       params: t.Object({
         id: t.String(),
       }),
-      body: t.Object({
-        userId: t.String(),
-        quality: t.Number({ minimum: 0, maximum: 5 }), // SM-2 algorithm quality
+      detail: {
+        summary: "Increment flashcard practice count",
+        description: "Record that a flashcard was practiced",
+        tags: ["Flashcard"],
+      },
+    }
+  )
+  .delete(
+    "/:id",
+    async ({ params, set, user }) => {
+      try {
+        const { id } = params;
+
+        // Find flashcard and verify ownership
+        const card = await db.query.flashcard.findFirst({
+          where: eq(flashcard.id, id),
+        });
+
+        if (!card) {
+          set.status = 404;
+          return {
+            success: false,
+            message: "Flashcard not found",
+          };
+        }
+
+        if (card.userId !== user.id) {
+          set.status = 403;
+          return {
+            success: false,
+            message: "Unauthorized",
+          };
+        }
+
+        // Delete flashcard
+        await db.delete(flashcard).where(eq(flashcard.id, id));
+
+        return {
+          success: true,
+          message: "Flashcard deleted",
+        };
+      } catch (error) {
+        set.status = 500;
+        return {
+          success: false,
+          message: "Failed to delete flashcard",
+          error: error instanceof Error ? error.message : "Unknown error",
+        };
+      }
+    },
+    {
+      auth: true,
+      params: t.Object({
+        id: t.String(),
       }),
       detail: {
-        summary: "Submit flashcard review",
-        description: "Submit review quality for spaced repetition algorithm",
-        tags: ["Flashcard", "Spaced Repetition"],
+        summary: "Delete a flashcard",
+        description: "Remove a flashcard by ID",
+        tags: ["Flashcard"],
       },
     }
   );

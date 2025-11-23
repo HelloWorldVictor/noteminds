@@ -1,9 +1,9 @@
-import { auth } from "@/lib/auth";
+import { auth } from "./auth";
 import cors from "@elysiajs/cors";
 import { node } from "@elysiajs/node";
 import { Elysia } from "elysia";
 import { configureOpenAPI } from "./configure-openapi";
-import { AIService } from "@/lib/ai";
+import { AIService } from "./ai";
 
 export function createRouter(
   options?: ConstructorParameters<typeof Elysia>[0]
