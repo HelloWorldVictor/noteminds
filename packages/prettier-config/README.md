@@ -1,4 +1,4 @@
-# @repo/prettier-config
+# @noteminds/prettier-config
 
 Shared Prettier configuration for Noteminds monorepo.
 
@@ -14,14 +14,14 @@ In your package's `package.json`:
 
 ```json
 {
-  "prettier": "@repo/prettier-config"
+  "prettier": "@noteminds/prettier-config"
 }
 ```
 
 Or create a `prettier.config.js`:
 
 ```js
-export { default } from "@repo/prettier-config";
+export { default } from "@noteminds/prettier-config";
 ```
 
 ## Configuration

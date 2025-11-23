@@ -3,7 +3,7 @@ import { App } from "./app";
 import "@/styles/globals.css";
 
 export default defineContentScript({
-  matches: ["*://*/*"],
+  matches: ["https://alueducation.instructure.com/*"],
   cssInjectionMode: "ui",
 
   async main(ctx) {
