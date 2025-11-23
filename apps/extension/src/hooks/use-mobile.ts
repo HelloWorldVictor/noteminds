@@ -1,5 +1,5 @@
 // This file provides a hook to detect if the user is on a mobile device.
-// It checks the screen width and updates when the window is resized.
+// It checks the screen width and updates when the window is resized
 
 import * as React from "react"
 
