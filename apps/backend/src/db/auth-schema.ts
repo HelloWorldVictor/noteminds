@@ -1,3 +1,5 @@
+// This file defines the authentication-related database tables.
+// It includes tables for users, sessions, accounts, and verification tokens used by better-auth.
 import { sql } from "drizzle-orm";
 import { sqliteTable, text, integer } from "drizzle-orm/sqlite-core";
 
