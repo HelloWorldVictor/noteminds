@@ -1,3 +1,5 @@
+// This file handles storage for auth tokens and themes.
+// It uses the browser's local storage to save and retrieve data across the extension.
 import { browser } from "wxt/browser";
 
 type Theme = "dark" | "light" | "system";
