@@ -1,3 +1,5 @@
+// This file helps extract content from the current webpage.
+// It clones the page and removes extension elements to get clean HTML.
 export interface ExtractedContent {
   title: string;
   url: string;
