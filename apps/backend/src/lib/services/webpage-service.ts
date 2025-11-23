@@ -1,3 +1,5 @@
+// This file provides services to analyze and retrieve webpages.
+// It uses the ContentProcessor to extract clean content and stores/retrieves webpages in the database.
 import { eq, and } from "drizzle-orm";
 import { db, webpage, type WebpageInsert, type WebpageSelect } from "@/db";
 import { contentProcessor, type ProcessedContent } from "./content-processor";
