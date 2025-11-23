@@ -1,4 +1,4 @@
-# @repo/eslint-config
+# @noteminds/eslint-config
 
 Shared ESLint configurations for Noteminds monorepo.
 
@@ -34,7 +34,7 @@ Create `eslint.config.js` in your package:
 ### For Node.js/Backend projects
 
 ```js
-import { config } from "@repo/eslint-config/base";
+import { config } from "@noteminds/eslint-config/base";
 
 export default [...config];
 ```
@@ -42,7 +42,7 @@ export default [...config];
 ### For React projects
 
 ```js
-import { config } from "@repo/eslint-config/react-internal";
+import { config } from "@noteminds/eslint-config/react-internal";
 
 export default [...config];
 ```
@@ -52,7 +52,7 @@ export default [...config];
 Override rules by adding configuration objects:
 
 ```js
-import { config } from "@repo/eslint-config/react-internal";
+import { config } from "@noteminds/eslint-config/react-internal";
 
 export default [
   ...config,

@@ -2,6 +2,7 @@ import { authClient } from "@/lib/auth-client";
 import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Card } from "@/components/ui/card";
+import { client } from "@/lib/client";
 
 export const Route = createFileRoute("/_app")({
   component: RouteComponent,
@@ -12,6 +13,7 @@ export const Route = createFileRoute("/_app")({
       throw redirect({
         to: "/welcome",
       });
+    client;
   },
   pendingMs: 0,
   pendingComponent: LoadingSkeleton,

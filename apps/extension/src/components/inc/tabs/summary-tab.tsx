@@ -6,18 +6,78 @@ import {
   ItemDescription,
   ItemTitle,
 } from "@/components/ui/item";
-import { ChevronRight, Sparkles } from "lucide-react";
+import { ChevronRight, NotepadText, Sparkles } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import {
+  Empty,
+  EmptyContent,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from "@/components/ui/empty";
+import { experimental_useObject as useObject } from "@ai-sdk/react";
+import { client, baseUrl } from "@/lib/client";
+import { summarySchema } from "@noteminds/backend/lib/schemas";
+import { authTokenStorage } from "@/lib/auth-storage";
+import { extractContent } from "@/lib/content-extractor";
+import { Message } from "@/components/ai-elements/message";
+import { Streamdown } from "streamdown";
 
 export function SummaryTab() {
+  const { object, isLoading, submit } = useObject({
+    api: baseUrl + "/summary/generate",
+    schema: summarySchema,
+    fetch: async (url, options) => {
+      const token = await authTokenStorage.getValue();
+      return fetch(url, {
+        ...options,
+        headers: {
+          ...options?.headers,
+          Authorization: token ? `Bearer ${token}` : "",
+        },
+      });
+    },
+  });
+  console.log(object);
   return (
     <div className="space-y-6">
       {/* Summaries List */}
       <div className="space-y-3">
         <div className="text-foreground flex items-center gap-2 text-sm font-semibold">
-          <Sparkles className="h-4 w-4" />
-          <span>Summaries</span>
+          <NotepadText className="size-4" />
+          <span>Page Summaries</span>
         </div>
-        <div className="space-y-2">
+        {<>{object?.content}</>}
+        <Empty>
+          <EmptyHeader>
+            <EmptyMedia variant="icon">
+              <NotepadText />
+            </EmptyMedia>
+            <EmptyTitle>No Page Summaries Yet</EmptyTitle>
+            <EmptyDescription>
+              You haven&apos;t created any page summaries yet.
+            </EmptyDescription>
+          </EmptyHeader>
+          <EmptyContent>
+            <div className="flex gap-2">
+              <Button
+                onClick={() => {
+                  const html = extractContent();
+                  console.log("Extracted html: ", html);
+                  // return;
+                  submit({
+                    webpageId: "0a5dc823-91d9-4026-aab3-3ee2ca749846",
+                  });
+                }}
+              >
+                Create Page Summary
+              </Button>
+            </div>
+          </EmptyContent>
+        </Empty>
+
+        {/* <div className="space-y-2">
           <Card className="border-border bg-background/60 border p-0 shadow-none">
             <Item className="rounded-xl border-0 px-4 py-3">
               <ItemContent>
@@ -53,7 +113,7 @@ export function SummaryTab() {
               </ItemActions>
             </Item>
           </Card>
-        </div>
+        </div> */}
       </div>
     </div>
   );

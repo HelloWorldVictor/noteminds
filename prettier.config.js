@@ -1,1 +1,1 @@
-export { default } from "@repo/prettier-config";
+export { default } from "@noteminds/prettier-config";

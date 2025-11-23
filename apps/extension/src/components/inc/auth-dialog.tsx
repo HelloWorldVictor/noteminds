@@ -79,17 +79,17 @@ export function AuthDialog({
         email: data.email,
         password: data.password,
       });
-
+      console.log("Sign in result:", result);
       if (result.data) {
         console.log("Sign in successful:", result.data);
         setIsOpen(false);
         signInForm.reset();
+        navigate({ to: "/" });
       } else if (result.error) {
         signInForm.setError("root", {
           message: result.error.message || "Invalid email or password",
         });
       }
-      navigate({ to: "/" });
     } catch (error) {
       console.error("Sign in error:", error);
       signInForm.setError("root", {
@@ -113,6 +113,8 @@ export function AuthDialog({
         console.log("Sign up successful:", result.data);
         setIsOpen(false);
         signUpForm.reset();
+        navigate({ to: "/" });
+
       } else if (result.error) {
         signUpForm.setError("root", {
           message: result.error.message || "Failed to create account",

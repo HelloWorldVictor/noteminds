@@ -1,4 +1,4 @@
-# @repo/typescript-config
+# @noteminds/typescript-config
 
 Shared TypeScript configurations for Noteminds monorepo.
 
@@ -41,7 +41,7 @@ In your `tsconfig.json`:
 
 ```json
 {
-  "extends": "@repo/typescript-config/react-library.json",
+  "extends": "@noteminds/typescript-config/react-library.json",
   "compilerOptions": {
     "outDir": "./dist"
   },

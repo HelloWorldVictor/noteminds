@@ -5,32 +5,30 @@ import { ResourcesTab } from "@/components/inc/tabs/resources-tab";
 import { SummaryTab } from "@/components/inc/tabs/summary-tab";
 import { Button } from "@/components/ui/button";
 import {
-    InputGroup,
-    InputGroupAddon,
-    InputGroupInput
+  InputGroup,
+  InputGroupAddon,
+  InputGroupInput,
 } from "@/components/ui/input-group";
 import { Kbd } from "@/components/ui/kbd";
 import {
-    Sidebar,
-    SidebarContent,
-    SidebarFooter,
-    SidebarHeader,
-    SidebarProvider,
-    SidebarRail
+  Sidebar,
+  SidebarContent,
+  SidebarFooter,
+  SidebarHeader,
+  SidebarProvider,
+  SidebarRail,
 } from "@/components/ui/sidebar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
-    DocumentText,
-    Flash,
-    FolderOpen,
-    Home2,
-    MessageQuestion,
-    SearchNormal,
-    Setting
+  DocumentText,
+  Flash,
+  FolderOpen,
+  Home2,
+  MessageQuestion,
+  SearchNormal,
+  Setting,
 } from "iconsax-reactjs";
-import {
-    XIcon
-} from "lucide-react";
+import { XIcon } from "lucide-react";
 import { useState } from "react";
 import { Badge } from "../ui/badge";
 import { HomeTab } from "./tabs/home-tab";
@@ -95,7 +93,7 @@ export function AppSidebar({
       }
       open={sidebarOpen}
     >
-      <Sidebar side="right" variant="sidebar" className="border-l">
+      <Sidebar side="right" variant="sidebar" className="z-99999 border-l">
         <SidebarHeader className="border-sidebar-border bg-sidebar border-b px-4 py-3">
           <div className="flex w-full items-center justify-between">
             <div className="flex items-center gap-3">
