@@ -1,3 +1,5 @@
+// This file defines environment variables for the backend.
+// It uses zod to validate required variables like Google OAuth credentials and database URL.
 import { createEnv } from "@t3-oss/env-core";
 import { z } from "zod";
 
