@@ -1,3 +1,5 @@
+// This file defines the webpage routes.
+// It creates a router with the prefix '/webpage' and provides endpoints for analyzing and retrieving webpages.
 import { createRouter } from "@/lib/create-app";
 import { webpageService } from "@/lib/services/webpage-service";
 import { t } from "elysia";
