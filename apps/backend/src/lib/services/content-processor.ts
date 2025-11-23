@@ -1,3 +1,5 @@
+// This file provides utilities to process HTML content into clean text and markdown.
+// It extracts the main article, removes unwanted elements, and calculates metadata like word count.
 import { JSDOM } from "jsdom";
 import { Readability } from "@mozilla/readability";
 import TurndownService from "turndown";
