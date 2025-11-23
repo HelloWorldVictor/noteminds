@@ -1,8 +1,12 @@
+// This file defines the quiz routes.
+// It creates a router with the prefix '/quiz' and provides endpoints for generating quizzes, retrieving a quiz, and submitting attempts.
 import { createRouter } from "@/lib/create-app";
 import { Elysia, t } from "elysia";
 
+// Define the router for quiz related endpoints.
 export const quizRoutes = createRouter({ prefix: "/quiz" })
-  .post(
+  // POST /generate: generate a quiz (currently a placeholder).
+.post(
     "/generate",
     async ({ body, set }) => {
       try {
@@ -46,7 +50,8 @@ export const quizRoutes = createRouter({ prefix: "/quiz" })
       },
     }
   )
-  .get(
+  // GET /:id: get a quiz by its ID (placeholder).
+.get(
     "/:id",
     async ({ params, set }) => {
       try {
@@ -79,7 +84,8 @@ export const quizRoutes = createRouter({ prefix: "/quiz" })
       },
     }
   )
-  .post(
+  // POST /:id/attempt: submit answers for a quiz attempt (placeholder).
+.post(
     "/:id/attempt",
     async ({ params, body, set }) => {
       try {
