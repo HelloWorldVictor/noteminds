@@ -1,3 +1,5 @@
+// This file manages messaging between different parts of the extension.
+// It allows the popup, background script, and content scripts to talk to each other.
 import React from "react";
 import { browser } from "wxt/browser";
 
