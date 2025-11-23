@@ -3,8 +3,8 @@
   "version": "1.0.50",
   "scripts": {
     "dev": "tsx watch --env-file=.env src/index.ts",
-    "build": "tsc src/index.ts --outDir dist",
-    "start": "NODE_ENV=production node dist/index.js",
+    "build": "tsc --noEmit",
+    "start": "NODE_ENV=production tsx src/index.ts",
     "lint": "eslint .",
     "check-types": "tsc --noEmit",
     "db:generate": "drizzle-kit generate",
