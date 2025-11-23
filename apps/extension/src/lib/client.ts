@@ -1,3 +1,5 @@
+// This file creates the API client for communicating with the backend.
+// It sets up the base URL and adds the auth token to requests.
 // client.ts
 import { treaty } from "@elysiajs/eden";
 import type { App } from "@noteminds/backend";
