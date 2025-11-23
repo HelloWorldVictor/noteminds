@@ -1,10 +1,13 @@
+// This file defines the summary routes.
+// It creates a router with the prefix '/summary' and provides endpoints for generating and retrieving summaries.
 import { createRouter } from "@/lib/create-app";
 import { Elysia, t } from "elysia";
 import { db, summary, webpage } from "@/db";
 import { eq, and } from "drizzle-orm";
 
 export const summaryRoutes = createRouter({ prefix: "/summary" })
-  .post(
+  // POST /generate: generate a summary (placeholder).
+.post(
     "/generate",
     async ({ body, set, user, aiService }) => {
       try {

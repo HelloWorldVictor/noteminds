@@ -1,9 +1,13 @@
+// This file defines the quiz routes.
+// It creates a router with the prefix '/quiz' and provides endpoints for generating quizzes, retrieving a quiz, and submitting attempts.
 import { createRouter } from "@/lib/create-app";
 import { Elysia, t } from "elysia";
 import { db, quiz, webpage } from "@/db";
 import { and, desc, eq } from "drizzle-orm";
 
+// Define the router for quiz related endpoints.
 export const quizRoutes = createRouter({ prefix: "/quiz" })
+  // POST /generate: generate a quiz (currently a placeholder).
   .post(
     "/generate",
     async ({ body, set, user, aiService }) => {

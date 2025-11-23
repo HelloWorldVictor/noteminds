@@ -1,8 +1,12 @@
+// This file defines the resource routes.
+// It creates a router with the prefix '/resource' and provides endpoints for generating resources and fetching them for a webpage.
 import { createRouter } from "@/lib/create-app";
 import { Elysia, t } from "elysia";
 
+// Define the router for resource related endpoints.
 export const resourceRoutes = createRouter({ prefix: "/resource" })
-  .post(
+  // POST /generate: generate resources (currently a placeholder).
+.post(
     "/generate",
     async ({ body, set }) => {
       try {
@@ -50,7 +54,8 @@ export const resourceRoutes = createRouter({ prefix: "/resource" })
       },
     }
   )
-  .get(
+  // GET /webpage/:webpageId: get resources for a specific webpage (placeholder).
+.get(
     "/webpage/:webpageId",
     async ({ params, query, set }) => {
       try {

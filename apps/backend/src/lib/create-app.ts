@@ -1,3 +1,5 @@
+// This file provides helper functions to create Elysia routers and apps.
+// It sets up authentication, CORS, and OpenAPI configuration for the backend.
 import { auth } from "./auth";
 import cors from "@elysiajs/cors";
 import { node } from "@elysiajs/node";

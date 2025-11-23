@@ -1,3 +1,5 @@
+// This file sets up authentication using better-auth.
+// It configures the database adapter, social login, and plugins.
 import { betterAuth } from "better-auth";
 import { bearer, openAPI } from "better-auth/plugins";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";

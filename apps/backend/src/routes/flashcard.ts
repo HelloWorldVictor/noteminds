@@ -1,9 +1,13 @@
+// This file defines the flashcard routes.
+// It creates a router with the prefix '/flashcard' and provides endpoints for generating, reviewing, and submitting flashcards.
 import { createRouter } from "@/lib/create-app";
 import { Elysia, t } from "elysia";
 import { db, flashcard, webpage } from "@/db";
 import { and, desc, eq } from "drizzle-orm";
 
+// Define the router for flashcard related endpoints.
 export const flashcardRoutes = createRouter({ prefix: "/flashcard" })
+  // POST /generate: generate flashcards (currently a placeholder).
   .post(
     "/generate",
     async ({ body, set, user, aiService }) => {
