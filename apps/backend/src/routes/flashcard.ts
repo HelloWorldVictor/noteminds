@@ -1,8 +1,12 @@
+// This file defines the flashcard routes.
+// It creates a router with the prefix '/flashcard' and provides endpoints for generating, reviewing, and submitting flashcards.
 import { createRouter } from "@/lib/create-app";
 import { Elysia, t } from "elysia";
 
+// Define the router for flashcard related endpoints.
 export const flashcardRoutes = createRouter({ prefix: "/flashcard" })
-  .post(
+  // POST /generate: generate flashcards (currently a placeholder).
+.post(
     "/generate",
     async ({ body, set }) => {
       try {
@@ -46,7 +50,8 @@ export const flashcardRoutes = createRouter({ prefix: "/flashcard" })
       },
     }
   )
-  .get(
+  // GET /user/:userId/review: get flashcards due for review (placeholder).
+.get(
     "/user/:userId/review",
     async ({ params, query, set }) => {
       try {
@@ -87,7 +92,8 @@ export const flashcardRoutes = createRouter({ prefix: "/flashcard" })
       },
     }
   )
-  .post(
+  // POST /:id/review: submit a review result for a flashcard (placeholder).
+.post(
     "/:id/review",
     async ({ params, body, set }) => {
       try {
