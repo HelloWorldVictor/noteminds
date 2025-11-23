@@ -2,6 +2,11 @@
   "extends": "@noteminds/typescript-config/node.json",
   "compilerOptions": {
     "strict": true,
+    "outDir": "./dist",
+    "rootDir": "./src",
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true,
     "paths": {
       "@/*": ["./src/*"]
     }
