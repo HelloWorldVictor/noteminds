@@ -1,3 +1,5 @@
+// This file defines the main application database tables.
+// It includes tables for webpages, summaries, quizzes, flashcards, and user notes.
 import { sql } from "drizzle-orm";
 import { sqliteTable, text, integer, index } from "drizzle-orm/sqlite-core";
 import { user } from "./auth-schema";
@@ -71,14 +73,11 @@ export const summary = sqliteTable(
     index("summary_webpage_id_idx").on(table.webpageId),
     index("summary_type_idx").on(table.type),
     index("summary_created_at_idx").on(table.createdAt),
-    index("summary_created_by_webpage_idx").on(
-      table.createdBy,
-      table.webpageId
-    ),
+    index("summary_created_by_webpage_idx").on(table.createdBy, table.webpageId),
   ]
 );
 
-// Quiz table - simple quiz with embedded questions
+// Quiz table - contains quiz metadata
 export const quiz = sqliteTable(
   "quiz",
   {
@@ -92,13 +91,19 @@ export const quiz = sqliteTable(
       .notNull()
       .references(() => webpage.id, { onDelete: "cascade" }),
     title: text("title").notNull(),
-    questions: text("questions", { mode: "json" }).notNull().$type<
-      Array<{
-        question: string;
-        options: string[];
-        correctAnswer: string;
-      }>
-    >(),
+    description: text("description"),
+    difficulty: text("difficulty", {
+      enum: ["easy", "medium", "hard"],
+    })
+      .default("medium")
+      .notNull(),
+    totalQuestions: integer("total_questions").notNull().default(0),
+    estimatedDuration: integer("estimated_duration").notNull(), // in minutes
+    metadata: text("metadata", { mode: "json" }).$type<{
+      model?: string;
+      tags?: string[];
+      category?: string;
+    }>(),
     createdAt: integer("created_at", { mode: "timestamp_ms" })
       .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
       .notNull(),
@@ -106,12 +111,47 @@ export const quiz = sqliteTable(
   (table) => [
     index("quiz_user_id_idx").on(table.userId),
     index("quiz_webpage_id_idx").on(table.webpageId),
+    index("quiz_difficulty_idx").on(table.difficulty),
     index("quiz_created_at_idx").on(table.createdAt),
     index("quiz_user_webpage_idx").on(table.userId, table.webpageId),
   ]
 );
 
-// Flashcard table - simple flashcards for learning
+// Question table - individual questions within quizzes
+export const question = sqliteTable(
+  "question",
+  {
+    id: text("id")
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
+    quizId: text("quiz_id")
+      .notNull()
+      .references(() => quiz.id, { onDelete: "cascade" }),
+    questionText: text("question_text").notNull(),
+    questionType: text("question_type", {
+      enum: ["multiple_choice", "true_false", "short_answer", "essay"],
+    })
+      .default("multiple_choice")
+      .notNull(),
+    options: text("options", { mode: "json" }).$type<string[]>(), // Array of answer options
+    correctAnswer: text("correct_answer").notNull(),
+    explanation: text("explanation"), // Explanation for the correct answer
+    points: integer("points").notNull().default(1),
+    orderIndex: integer("order_index").notNull(),
+    metadata: text("metadata", { mode: "json" }).$type<{
+      difficulty?: string;
+      topic?: string;
+      keywords?: string[];
+    }>(),
+  },
+  (table) => [
+    index("question_quiz_id_idx").on(table.quizId),
+    index("question_type_idx").on(table.questionType),
+    index("question_order_idx").on(table.quizId, table.orderIndex),
+  ]
+);
+
+// Flashcard table - spaced repetition flashcards
 export const flashcard = sqliteTable(
   "flashcard",
   {
@@ -124,9 +164,25 @@ export const flashcard = sqliteTable(
     webpageId: text("webpage_id")
       .notNull()
       .references(() => webpage.id, { onDelete: "cascade" }),
-    front: text("front").notNull(), // The question/prompt
-    back: text("back").notNull(), // The answer
-    practiceCount: integer("practice_count").notNull().default(0), // How many times reviewed
+    front: text("front").notNull(),
+    back: text("back").notNull(),
+    tags: text("tags", { mode: "json" }).$type<string[]>(),
+    difficulty: text("difficulty", {
+      enum: ["easy", "medium", "hard"],
+    })
+      .default("medium")
+      .notNull(),
+    // Spaced repetition fields
+    repetitions: integer("repetitions").notNull().default(0),
+    easeFactor: integer("ease_factor").notNull().default(2500), // SM-2 algorithm
+    interval: integer("interval").notNull().default(1), // days
+    nextReview: integer("next_review", { mode: "timestamp_ms" }),
+    lastReviewed: integer("last_reviewed", { mode: "timestamp_ms" }),
+    metadata: text("metadata", { mode: "json" }).$type<{
+      category?: string;
+      source?: string;
+      model?: string;
+    }>(),
     createdAt: integer("created_at", { mode: "timestamp_ms" })
       .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
       .notNull(),
@@ -134,6 +190,8 @@ export const flashcard = sqliteTable(
   (table) => ({
     userIdIdx: index("flashcard_user_id_idx").on(table.userId),
     webpageIdIdx: index("flashcard_webpage_id_idx").on(table.webpageId),
+    difficultyIdx: index("flashcard_difficulty_idx").on(table.difficulty),
+    nextReviewIdx: index("flashcard_next_review_idx").on(table.nextReview),
     createdAtIdx: index("flashcard_created_at_idx").on(table.createdAt),
     userWebpageIdx: index("flashcard_user_webpage_idx").on(
       table.userId,
@@ -142,7 +200,43 @@ export const flashcard = sqliteTable(
   })
 );
 
-// User notes table - simple personal notes on webpages
+// Quiz attempt table - tracks user attempts at quizzes
+export const quizAttempt = sqliteTable(
+  "quiz_attempt",
+  {
+    id: text("id")
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    quizId: text("quiz_id")
+      .notNull()
+      .references(() => quiz.id, { onDelete: "cascade" }),
+    score: integer("score").notNull(),
+    totalQuestions: integer("total_questions").notNull(),
+    timeSpent: integer("time_spent").notNull(), // in seconds
+    completed: integer("completed", { mode: "boolean" })
+      .default(true)
+      .notNull(),
+    answers: text("answers", { mode: "json" }).$type<
+      Record<string, string | string[]>
+    >(), // questionId -> user's answer(s)
+    startedAt: integer("started_at", { mode: "timestamp_ms" })
+      .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
+      .notNull(),
+    completedAt: integer("completed_at", { mode: "timestamp_ms" }),
+  },
+  (table) => [
+    index("quiz_attempt_user_id_idx").on(table.userId),
+    index("quiz_attempt_quiz_id_idx").on(table.quizId),
+    index("quiz_attempt_completed_idx").on(table.completed),
+    index("quiz_attempt_started_at_idx").on(table.startedAt),
+    index("quiz_attempt_user_quiz_idx").on(table.userId, table.quizId),
+  ]
+);
+
+// User notes table - personal notes on webpages
 export const userNote = sqliteTable(
   "user_note",
   {
@@ -156,6 +250,17 @@ export const userNote = sqliteTable(
       .notNull()
       .references(() => webpage.id, { onDelete: "cascade" }),
     content: text("content").notNull(),
+    isPrivate: integer("is_private", { mode: "boolean" })
+      .default(true)
+      .notNull(),
+    tags: text("tags", { mode: "json" }).$type<string[]>(),
+    // Text selection/highlight info
+    selectedText: text("selected_text"),
+    selectionPosition: text("selection_position", { mode: "json" }).$type<{
+      start: number;
+      end: number;
+      xpath?: string;
+    }>(),
     createdAt: integer("created_at", { mode: "timestamp_ms" })
       .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
       .notNull(),
@@ -166,6 +271,7 @@ export const userNote = sqliteTable(
   (table) => [
     index("user_note_user_id_idx").on(table.userId),
     index("user_note_webpage_id_idx").on(table.webpageId),
+    index("user_note_is_private_idx").on(table.isPrivate),
     index("user_note_created_at_idx").on(table.createdAt),
     index("user_note_user_webpage_idx").on(table.userId, table.webpageId),
   ]
@@ -256,8 +362,14 @@ export type SummarySelect = typeof summary.$inferSelect;
 export type QuizInsert = typeof quiz.$inferInsert;
 export type QuizSelect = typeof quiz.$inferSelect;
 
+export type QuestionInsert = typeof question.$inferInsert;
+export type QuestionSelect = typeof question.$inferSelect;
+
 export type FlashcardInsert = typeof flashcard.$inferInsert;
 export type FlashcardSelect = typeof flashcard.$inferSelect;
+
+export type QuizAttemptInsert = typeof quizAttempt.$inferInsert;
+export type QuizAttemptSelect = typeof quizAttempt.$inferSelect;
 
 export type UserNoteInsert = typeof userNote.$inferInsert;
 export type UserNoteSelect = typeof userNote.$inferSelect;
