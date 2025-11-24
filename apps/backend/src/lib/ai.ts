@@ -71,11 +71,15 @@ export class AIService {
       prompt,
       system: systemPrompt,
       temperature: 0.3,
-      onFinish({ object }) {
+      async onFinish({ object }) {
+        console.log(
+          "Finished generating summary, saving to database: ",
+          object
+        );
         if (!object) {
           return;
         }
-        db.insert(summary).values({
+        await db.insert(summary).values({
           webpageId,
           title: object.title,
           content: object.content,

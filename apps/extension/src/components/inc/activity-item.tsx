@@ -24,6 +24,7 @@ const variantConfig = {
   note: { icon: Edit, prefix: "Note" },
   quiz: { icon: MessageQuestion, prefix: "Quiz" },
   library: { icon: FolderOpen, prefix: "Library" },
+  flashcard: { icon: Flash, prefix: "Flashcard" },
 };
 
 export function ActivityItem({

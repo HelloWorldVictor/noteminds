@@ -16,7 +16,6 @@ export function createRouter(
         const session = await auth.api.getSession({
           headers,
         });
-        console.log("Auth session:", session);
         if (!session)
           return status(401, {
             message: "Unauthorized",
@@ -32,15 +31,10 @@ export function createRouter(
     },
   });
 }
-export async function createApp(
-  options?: ConstructorParameters<typeof Elysia>[0]
-) {
-  const app = createRouter({
+export function createApp(options?: ConstructorParameters<typeof Elysia>[0]) {
+  return createRouter({
     adapter: node(),
-  });
-  await configureOpenAPI(app);
-
-  app.use(
+  }).use(
     cors({
       origin: "*",
       methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
@@ -48,8 +42,6 @@ export async function createApp(
       allowedHeaders: ["Content-Type", "Authorization"],
     })
   );
-
-  return app;
 }
 
 export type ElysiaApp = ReturnType<typeof createApp>;

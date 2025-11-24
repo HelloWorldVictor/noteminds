@@ -1,7 +1,9 @@
 import ReactDOM from "react-dom/client";
 import { App } from "./app";
 import "@/styles/globals.css";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
+const queryclient = new QueryClient();
 export default defineContentScript({
   matches: ["https://alueducation.instructure.com/*"],
   cssInjectionMode: "ui",
@@ -18,7 +20,11 @@ export default defineContentScript({
         container.append(wrapper);
 
         const root = ReactDOM.createRoot(wrapper);
-        root.render(<App />);
+        root.render(
+          <QueryClientProvider client={queryclient}>
+            <App />
+          </QueryClientProvider>
+        );
         return { root, wrapper };
       },
       onRemove: (elements) => {

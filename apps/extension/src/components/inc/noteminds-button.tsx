@@ -9,6 +9,7 @@ import {
   X,
   ScanTextIcon,
   BrainCircuitIcon,
+  Loader2,
 } from "lucide-react";
 import {
   Tooltip,
@@ -18,6 +19,9 @@ import {
 import { Button } from "@/components/ui/button";
 import NotemindLogo from "@/assets/icon.png";
 import { ExtensionMessaging } from "@/lib/messaging";
+import { $api } from "@/lib/api";
+import { extractContent } from "@/lib/content-extractor";
+import { useContentStore } from "@/lib/store";
 export function NotemindsButton({
   user,
   isOpen,
@@ -35,6 +39,16 @@ export function NotemindsButton({
   isOpen: boolean;
   onToggle: () => void;
 }) {
+  const { webpageId, setWebpage } = useContentStore();
+  const { mutate, isPending } = $api.useMutation("post", "/webpage/analyze", {
+    onSuccess: (data) => {
+      const webpage = (data as any).data.webpage;
+      setWebpage(webpage.id, webpage.title);
+      console.log("Webpage analyzed:", data);
+      onToggle();
+    },
+  });
+
   const [isExpanded, setIsExpanded] = useState(false);
   const [isExtensionEnabled, setIsExtensionEnabled] = useState(true);
   const [showPowerPopover, setShowPowerPopover] = useState(false);
@@ -236,13 +250,29 @@ export function NotemindsButton({
         <Tooltip delayDuration={300}>
           <TooltipTrigger asChild>
             <Button
-              onClick={onToggle}
+              onClick={() => {
+                const { url, html } = extractContent();
+                if (!webpageId) {
+                  mutate({
+                    body: {
+                      url,
+                      html,
+                    },
+                  });
+                } else {
+                  onToggle();
+                }
+              }}
               variant="default"
               size="icon-lg"
               className="border-border relative rounded-full border shadow-xl transition-all duration-300 hover:scale-105"
             >
               {isExpanded ? (
-                <ScanTextIcon className="h-5 w-5" />
+                isPending ? (
+                  <Loader2 className="size-5 animate-spin" />
+                ) : (
+                  <ScanTextIcon className="size-5" />
+                )
               ) : (
                 <img
                   src={NotemindLogo}
